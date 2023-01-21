@@ -13,8 +13,7 @@
   ],
   
   "require": {
-    "php": ">=8.1",
-    "baks-dev/users-user": "^6.2"
+    "php": ">=8.1"
   },
 
   "require-dev": {
