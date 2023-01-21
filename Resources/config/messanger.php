@@ -37,8 +37,7 @@ return static function (ContainerConfigurator $configurator, FrameworkConfig $co
 	
     $services->load($namespace.'\Messanger\\', '../../Messanger')
       ->exclude(__DIR__.'/../../Messanger/**/*Command.php');
-    
-    
+	
     $config->messenger()->routing(\BaksDev\Files\Resources\Messanger\Request\Images\Command::class)->senders(['async_files_resources']);
 	
 };
