@@ -25,7 +25,5 @@ interface UploadEntityInterface
     public function updCdn(string $ext) : void;
     
     public function getUploadDir() : object;
-    
-    
-    
+	
 }
