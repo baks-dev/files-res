@@ -30,28 +30,22 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final class Handler
 {
-    public const PATH_IMAGE_CDN = '/cdn/upload/image';
+	/** Конечная точка CDN для загрузки файла */
+    private const PATH_IMAGE_CDN = '/cdn/upload/image';
     
     private EntityManagerInterface $entityManager;
-    //private LoggerInterface $logger;
     private HttpClientInterface $httpClient;
     private ParameterBagInterface $parameter;
-    
-    //private KernelInterface $kernel;
-    
+
     public function __construct(
       EntityManagerInterface $entityManager,
-      //LoggerInterface $logger,
       HttpClientInterface $httpClient,
       ParameterBagInterface $parameter,
-        //KernelInterface $kernel,
     )
     {
         $this->entityManager = $entityManager;
-        //$this->logger = $logger;
         $this->httpClient = $httpClient;
         $this->parameter = $parameter;
-        //$this->kernel = $kernel;
     }
     
     public function handle(Command $command) : bool|string
@@ -78,11 +72,14 @@ final class Handler
           'dir' => (string) $command->dir,
           'image' => DataPart::fromPath($uploadFile),
         ];
-        
-        $formData = new FormDataPart($formFields);
-        
+		
+		/* Формируем заголовки файла и авторизации CDN */
+		$formData = new FormDataPart($formFields);
+		$headers = $formData->getPreparedHeaders()->toArray();
+		$headers[] = 'Authorization: Basic '.base64_encode($this->parameter->get('cdn.user').':'.$this->parameter->get('cdn.pass'));
+		
         $request = $this->httpClient->request('POST', $this->parameter->get('cdn.host').self::PATH_IMAGE_CDN, [
-          'headers' => $formData->getPreparedHeaders()->toArray(),
+          'headers' => $headers,
           'body' => $formData->bodyToString(),
         ]);
         
@@ -96,7 +93,6 @@ final class Handler
         $this->entityManager->flush();
         
         return true;
-        
     }
     
 }

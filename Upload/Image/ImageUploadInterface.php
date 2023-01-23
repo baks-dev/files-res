@@ -23,5 +23,5 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 interface ImageUploadInterface
 {
-    public function upload(string $parameterUploadDir, UploadedFile $file, UploadEntityInterface $entity) : void;
+    public function upload(UploadedFile $file, UploadEntityInterface $entity) : void;
 }

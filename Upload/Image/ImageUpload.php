@@ -67,14 +67,9 @@ final class ImageUpload implements ImageUploadInterface
      * @return void
      * @throws Exception
      */
-    public function upload(string $parameterUploadDir, UploadedFile $file, UploadEntityInterface $entity) : void
+    public function upload(UploadedFile $file, UploadEntityInterface $entity) : void
     {
         $name = uniqid('', false);
-        
-        //        /* Получаем название директории по классу */
-        //        $entityDir = explode('Entity', get_class($entity));
-        //        $entityDir = str_replace('\\', '/', strtolower($entityDir[1]));
-        
         $dirId = $entity->getUploadDir();
         
         //dump($dirId);
@@ -83,10 +78,11 @@ final class ImageUpload implements ImageUploadInterface
         {
             throw new InvalidArgumentException(sprintf('Not found ID in class %s', get_class($entity)));
         }
-        
-    
+		
+		/* Определяем директорию загрузки файла по названию таблицы */
+		$parameterUploadDir = $entity::TABLE;
         $uploadDir = $this->parameter->get($parameterUploadDir).$dirId;
-        
+
         /* Создаем директорию Для загрузки */
         $this->filesystem->mkdir($uploadDir);
         
