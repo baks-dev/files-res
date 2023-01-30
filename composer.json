@@ -2,38 +2,42 @@
   "name": "baks-dev/files-res",
   "description": "Модуль файловых ресурсов",
   "homepage": "https://github.com/baks-dev/files-res",
-  "keywords": ["library", "symfony", "files", "resources", "plugin", "library", "module", "baksdev"],
+  "keywords": [
+    "library",
+    "symfony",
+    "files",
+    "resources",
+    "plugin",
+    "library",
+    "module",
+    "baksdev"
+  ],
   "license": "MIT",
-  "type": "library",
+  "type": "symfony-bundle",
   "authors": [
     {
       "name": "Baks Development",
       "email": "admin@baks.dev"
     }
   ],
-  
   "require": {
     "php": ">=8.1",
     "symfony/http-client": "^6.2"
   },
-
   "require-dev": {
     "roave/security-advisories": "dev-latest",
     "symfony/test-pack": "^1.0"
   },
-
   "autoload": {
     "psr-4": {
       "BaksDev\\Files\\Resources\\": ""
     }
   },
-
   "autoload-dev": {
     "psr-4": {
       "BaksDev\\Files\\Resources\\Tests\\": "Tests/"
     }
   },
-
   "config": {
     "sort-packages": true,
     "allow-plugins": {

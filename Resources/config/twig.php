@@ -7,7 +7,7 @@ use Symfony\Config\Framework\TranslatorConfig;
 use Symfony\Config\FrameworkConfig;
 use Symfony\Config\TwigConfig;
 
-return static function (TwigConfig $config) {
-    
-    $config->global('cdn_host')->value('%env(CDN_HOST)%');
+return static function(TwigConfig $config) {
+	
+	$config->global('cdn_host')->value('%env(CDN_HOST)%');
 };

@@ -31,68 +31,74 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 final class Handler
 {
 	/** Конечная точка CDN для загрузки файла */
-    private const PATH_IMAGE_CDN = '/cdn/upload/image';
-    
-    private EntityManagerInterface $entityManager;
-    private HttpClientInterface $httpClient;
-    private ParameterBagInterface $parameter;
-
-    public function __construct(
-      EntityManagerInterface $entityManager,
-      HttpClientInterface $httpClient,
-      ParameterBagInterface $parameter,
-    )
-    {
-        $this->entityManager = $entityManager;
-        $this->httpClient = $httpClient;
-        $this->parameter = $parameter;
-    }
-    
-    public function handle(Command $command) : bool|string
-    {
-        /* @var UploadEntityInterface $imgEntity */
-        $imgEntity = $this->entityManager->getRepository($command->entity)->find($command->id);
-        
-        if($imgEntity === null)
-        {
-            throw new RecoverableMessageHandlingException('Error get Entity ID:'.$command->id);
-        }
-        
-        /* Абсолютный путь к файлу изображения */
-        $uploadFile = $this->parameter->get($command->path).$command->dir.'/'.$command->name;
-        
-        if(!file_exists($uploadFile))
-        {
-            throw new RecoverableMessageHandlingException(sprintf('File Not found: %s', $uploadFile) );
-        }
-        
-        /* Указываем путь и название файла для загрузки CDN */
-        $formFields = [
-          'path' => $command->path,
-          'dir' => (string) $command->dir,
-          'image' => DataPart::fromPath($uploadFile),
-        ];
+	private const PATH_IMAGE_CDN = '/cdn/upload/image';
+	
+	private EntityManagerInterface $entityManager;
+	
+	private HttpClientInterface $httpClient;
+	
+	private ParameterBagInterface $parameter;
+	
+	
+	public function __construct(
+		EntityManagerInterface $entityManager,
+		HttpClientInterface $httpClient,
+		ParameterBagInterface $parameter,
+	)
+	{
+		$this->entityManager = $entityManager;
+		$this->httpClient = $httpClient;
+		$this->parameter = $parameter;
+	}
+	
+	
+	public function handle(Command $command) : bool|string
+	{
+		/* @var UploadEntityInterface $imgEntity */
+		$imgEntity = $this->entityManager->getRepository($command->entity)->find($command->id);
+		
+		if($imgEntity === null)
+		{
+			throw new RecoverableMessageHandlingException('Error get Entity ID:'.$command->id);
+		}
+		
+		/* Абсолютный путь к файлу изображения */
+		$uploadFile = $this->parameter->get($command->path).$command->dir.'/'.$command->name;
+		
+		if(!file_exists($uploadFile))
+		{
+			throw new RecoverableMessageHandlingException(sprintf('File Not found: %s', $uploadFile));
+		}
+		
+		/* Указываем путь и название файла для загрузки CDN */
+		$formFields = [
+			'path' => $command->path,
+			'dir' => (string) $command->dir,
+			'image' => DataPart::fromPath($uploadFile),
+		];
 		
 		/* Формируем заголовки файла и авторизации CDN */
 		$formData = new FormDataPart($formFields);
 		$headers = $formData->getPreparedHeaders()->toArray();
-		$headers[] = 'Authorization: Basic '.base64_encode($this->parameter->get('cdn.user').':'.$this->parameter->get('cdn.pass'));
+		$headers[] = 'Authorization: Basic '.base64_encode($this->parameter->get('cdn.user'
+				).':'.$this->parameter->get('cdn.pass')
+			);
 		
-        $request = $this->httpClient->request('POST', $this->parameter->get('cdn.host').self::PATH_IMAGE_CDN, [
-          'headers' => $headers,
-          'body' => $formData->bodyToString(),
-        ]);
-        
-        if($request->getStatusCode() !== 200)
-        {
-            throw new RecoverableMessageHandlingException('Error upload file CDN');
-        }
-        
-        /* Обновляем сущность на CDN файла */
-        $imgEntity->updCdn('webp');
-        $this->entityManager->flush();
-        
-        return true;
-    }
-    
+		$request = $this->httpClient->request('POST', $this->parameter->get('cdn.host').self::PATH_IMAGE_CDN, [
+			'headers' => $headers,
+			'body' => $formData->bodyToString(),
+		]);
+		
+		if($request->getStatusCode() !== 200)
+		{
+			throw new RecoverableMessageHandlingException('Error upload file CDN');
+		}
+		
+		/* Обновляем сущность на CDN файла */
+		$imgEntity->updCdn('webp');
+		$this->entityManager->flush();
+		
+		return true;
+	}
+	
 }

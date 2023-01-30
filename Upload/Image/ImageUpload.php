@@ -35,92 +35,102 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class ImageUpload implements ImageUploadInterface
 {
-    
-    private LoggerInterface $logger;
-    private RequestStack $request;
-    private TranslatorInterface $translator;
-    private MessageBusInterface $bus;
-    private ParameterBagInterface $parameter;
-    private Filesystem $filesystem;
-    
-    public function __construct(
-      LoggerInterface $logger,
-      RequestStack $request,
-      TranslatorInterface $translator,
-      MessageBusInterface $bus,
-      ParameterBagInterface $parameter,
-      Filesystem $filesystem
-    )
-    {
-        $this->logger = $logger;
-        $this->request = $request;
-        $this->translator = $translator;
-        $this->bus = $bus;
-        $this->parameter = $parameter;
-        $this->filesystem = $filesystem;
-    }
-    
-    /**
-     * @param string $parameterUploadDir Название параметра в контейнере абсолютного пути директории загрузки файла изображение
-     * @param UploadedFile $file Объект загружаемого файла изображения
-     * @param UploadEntityInterface $entity
-     * @return void
-     * @throws Exception
-     */
-    public function upload(UploadedFile $file, UploadEntityInterface $entity) : void
-    {
-        $name = uniqid('', false);
-        $dirId = $entity->getUploadDir();
-        
-        //dump($dirId);
-        
-        if(empty($dirId))
-        {
-            throw new InvalidArgumentException(sprintf('Not found ID in class %s', get_class($entity)));
-        }
+	
+	private LoggerInterface $logger;
+	
+	private RequestStack $request;
+	
+	private TranslatorInterface $translator;
+	
+	private MessageBusInterface $bus;
+	
+	private ParameterBagInterface $parameter;
+	
+	private Filesystem $filesystem;
+	
+	
+	public function __construct(
+		LoggerInterface $logger,
+		RequestStack $request,
+		TranslatorInterface $translator,
+		MessageBusInterface $bus,
+		ParameterBagInterface $parameter,
+		Filesystem $filesystem,
+	)
+	{
+		$this->logger = $logger;
+		$this->request = $request;
+		$this->translator = $translator;
+		$this->bus = $bus;
+		$this->parameter = $parameter;
+		$this->filesystem = $filesystem;
+	}
+	
+	
+	/**
+	 * @param string $parameterUploadDir Название параметра в контейнере абсолютного пути директории загрузки файла изображение
+	 * @param UploadedFile $file Объект загружаемого файла изображения
+	 * @param UploadEntityInterface $entity
+	 *
+	 * @return void
+	 * @throws Exception
+	 */
+	public function upload(UploadedFile $file, UploadEntityInterface $entity) : void
+	{
+		$name = uniqid('', false);
+		$dirId = $entity->getUploadDir();
+		
+		//dump($dirId);
+		
+		if(empty($dirId))
+		{
+			throw new InvalidArgumentException(sprintf('Not found ID in class %s', get_class($entity)));
+		}
 		
 		/* Определяем директорию загрузки файла по названию таблицы */
 		$parameterUploadDir = $entity::TABLE;
-        $uploadDir = $this->parameter->get($parameterUploadDir).$dirId;
-
-        /* Создаем директорию Для загрузки */
-        $this->filesystem->mkdir($uploadDir);
-        
-        /* Перемещаем файл в директорию */
-        try
-        {
-            
-            /* Генерируем новое название файла с расширением */
-            $newFilename = $name.'.'.$file->guessExtension();
-            
-            /* Перемещаем файл */
-            $move = $file->move(
-              $uploadDir,
-              $newFilename
-            );
-            
-            /**
-             *  Применяем к сущности параметры файла
-             *  $name - название файла без расширения
-             */
-            $entity->updFile($name, $move->getExtension(), $move->getSize());
-            
-            /* Создаем комманду отправки файла CDN */
-            //(object $id, string $entity, string $name, string $dir)
-
-            $command = new Command($entity->getId(), get_class($entity), $newFilename, $dirId, $parameterUploadDir);
-            $this->bus->dispatch($command);
-            
-        }
-        catch(FileException $e)
-        {
-            $this->logger->error($e->getMessage());
-            $this->request->getSession()->getFlashBag()->add(
-              'danger',
-              $name.": ".$this->translator->trans(
-                'Ошибка при загрузке'));
-        }
-        
-    }
-    
+		$uploadDir = $this->parameter->get($parameterUploadDir).$dirId;
+		
+		/* Создаем директорию Для загрузки */
+		$this->filesystem->mkdir($uploadDir);
+		
+		/* Перемещаем файл в директорию */
+		try
+		{
+			
+			/* Генерируем новое название файла с расширением */
+			$newFilename = $name.'.'.$file->guessExtension();
+			
+			/* Перемещаем файл */
+			$move = $file->move(
+				$uploadDir,
+				$newFilename
+			);
+			
+			/**
+			 *  Применяем к сущности параметры файла
+			 *  $name - название файла без расширения
+			 */
+			$entity->updFile($name, $move->getExtension(), $move->getSize());
+			
+			/* Создаем комманду отправки файла CDN */
+			//(object $id, string $entity, string $name, string $dir)
+			
+			$command = new Command($entity->getId(), get_class($entity), $newFilename, $dirId, $parameterUploadDir);
+			$this->bus->dispatch($command);
+			
+		}
+		catch(FileException $e)
+		{
+			$this->logger->error($e->getMessage());
+			$this->request->getSession()->getFlashBag()->add(
+				'danger',
+				$name.": ".$this->translator->trans(
+					'Ошибка при загрузке'
+				)
+			);
+		}
+		
+	}
+	
 }

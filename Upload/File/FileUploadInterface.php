@@ -23,6 +23,6 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 interface FileUploadInterface
 {
-    public function upload(string $parameterUploadDir, UploadedFile $file, UploadEntityInterface $entity) : void;
-    
+	public function upload(string $parameterUploadDir, UploadedFile $file, UploadEntityInterface $entity) : void;
+	
 }

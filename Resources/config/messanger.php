@@ -20,7 +20,7 @@ namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
 use Symfony\Config\FrameworkConfig;
 
-return static function(ContainerConfigurator $configurator, FrameworkConfig $framework){
+return static function(ContainerConfigurator $configurator, FrameworkConfig $framework) {
 	$services = $configurator->services()
 		->defaults()
 		->autowire()

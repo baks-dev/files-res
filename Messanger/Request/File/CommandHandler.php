@@ -22,16 +22,19 @@ use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
 
 final class CommandHandler implements MessageHandlerInterface
 {
-    private Handler $handler;
-    
-    public function __construct(Handler $handler)
-    {
-        $this->handler = $handler;
-    }
-    
-    public function __invoke(Command $command)
-    {
-        $handle = $this->handler->handle($command);
-    }
+	private Handler $handler;
+	
+	
+	public function __construct(Handler $handler)
+	{
+		$this->handler = $handler;
+	}
+	
+	
+	public function __invoke(Command $command)
+	{
+		$handle = $this->handler->handle($command);
+	}
+	
 }
 

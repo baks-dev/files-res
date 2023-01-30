@@ -34,85 +34,93 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class FileUpload implements FileUploadInterface
 {
-    private LoggerInterface $logger;
-    private RequestStack $request;
-    private TranslatorInterface $translator;
-    private MessageBusInterface $bus;
-    private ParameterBagInterface $parameter;
-    
-    public function __construct(
-      LoggerInterface $logger,
-      RequestStack $request,
-      TranslatorInterface $translator,
-      MessageBusInterface $bus,
-      ParameterBagInterface $parameter
-    )
-    {
-        $this->logger = $logger;
-        $this->request = $request;
-        $this->translator = $translator;
-        $this->bus = $bus;
-        $this->parameter = $parameter;
-    }
-    
-    public function upload(string $parameterUploadDir, UploadedFile $file, UploadEntityInterface $entity) : void
-    {
-        $name = uniqid('', false);
-    
-        //        /* Получаем название директории по классу */
-        //        $entityDir = explode('Entity', get_class($entity));
-        //        $entityDir = str_replace('\\', '/', strtolower($entityDir[1]));
-    
-        //$dirId = null;
-    
-//        if(method_exists($entity, 'getEvent'))
-//        {
-//            $dirId = $entity->getEvent()->getId();
-//        }
-//        else if(method_exists($entity, 'getId'))
-//        {
-//            $dirId = $entity->getId();
-//        }
-    
-        $dirId = $entity->getUploadDir();
-    
-        if(empty($dirId))
-        {
-            throw new \RuntimeException(sprintf('Not found ID in class %s', get_class($entity)));
-        }
-    
-        /* Перемещаем файл в директорию */
-        try
-        {
-            /* Генерируем новое название файла с расширением */
-            $newFilename = $name.'.'.$file->guessExtension();
-        
-            /* Перемещаем файл */
-            $move = $file->move(
-              $this->parameter->get($parameterUploadDir).$dirId,
-              $newFilename
-            );
-        
-            /**
-             *  Применяем к сущности параметры файла
-             *  $name - название файла без расширения
-             */
-            $entity->updFile($name, $move->getExtension(), $move->getSize());
-        
-            /* Создаем комманду отправки файла CDN */
-            $command = new Command($dirId, get_class($entity), $newFilename, $parameterUploadDir);
-            $this->bus->dispatch($command);
-        
-        }
-        catch(FileException $e)
-        {
-            $this->logger->error($e->getMessage());
-            $this->request->getSession()->getFlashBag()->add(
-              'danger',
-              $name.": ".$this->translator->trans(
-                        'error.product.upload.photo',
-                domain: 'product.product'));
-        }
-    }
-    
+	private LoggerInterface $logger;
+	
+	private RequestStack $request;
+	
+	private TranslatorInterface $translator;
+	
+	private MessageBusInterface $bus;
+	
+	private ParameterBagInterface $parameter;
+	
+	
+	public function __construct(
+		LoggerInterface $logger,
+		RequestStack $request,
+		TranslatorInterface $translator,
+		MessageBusInterface $bus,
+		ParameterBagInterface $parameter,
+	)
+	{
+		$this->logger = $logger;
+		$this->request = $request;
+		$this->translator = $translator;
+		$this->bus = $bus;
+		$this->parameter = $parameter;
+	}
+	
+	
+	public function upload(string $parameterUploadDir, UploadedFile $file, UploadEntityInterface $entity) : void
+	{
+		$name = uniqid('', false);
+		
+		//        /* Получаем название директории по классу */
+		//        $entityDir = explode('Entity', get_class($entity));
+		//        $entityDir = str_replace('\\', '/', strtolower($entityDir[1]));
+		
+		//$dirId = null;
+		
+		//        if(method_exists($entity, 'getEvent'))
+		//        {
+		//            $dirId = $entity->getEvent()->getId();
+		//        }
+		//        else if(method_exists($entity, 'getId'))
+		//        {
+		//            $dirId = $entity->getId();
+		//        }
+		
+		$dirId = $entity->getUploadDir();
+		
+		if(empty($dirId))
+		{
+			throw new \RuntimeException(sprintf('Not found ID in class %s', get_class($entity)));
+		}
+		
+		/* Перемещаем файл в директорию */
+		try
+		{
+			/* Генерируем новое название файла с расширением */
+			$newFilename = $name.'.'.$file->guessExtension();
+			
+			/* Перемещаем файл */
+			$move = $file->move(
+				$this->parameter->get($parameterUploadDir).$dirId,
+				$newFilename
+			);
+			
+			/**
+			 *  Применяем к сущности параметры файла
+			 *  $name - название файла без расширения
+			 */
+			$entity->updFile($name, $move->getExtension(), $move->getSize());
+			
+			/* Создаем комманду отправки файла CDN */
+			$command = new Command($dirId, get_class($entity), $newFilename, $parameterUploadDir);
+			$this->bus->dispatch($command);
+			
+		}
+		catch(FileException $e)
+		{
+			$this->logger->error($e->getMessage());
+			$this->request->getSession()->getFlashBag()->add(
+				'danger',
+				$name.": ".$this->translator->trans(
+					'error.product.upload.photo',
+					domain: 'product.product'
+				)
+			);
+		}
+	}
+	
 }

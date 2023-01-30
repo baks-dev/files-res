@@ -20,46 +20,49 @@ namespace BaksDev\Files\Resources\Messanger\Request\Images;
 
 final class Command
 {
-    /**
-     * Идентификатор сущности для обновления CDN (UID)
-     * @var object
-     */
-    public readonly object $id;
-    
-    
-    /**
-     * Идентификатор сущности ля обновления CDN (UID)
-     * @var object
-     */
-    public readonly object $dir;
-    
-    /**
-     * Класс сущности
-     * @var string
-     */
-    public readonly string $entity;
-    
-
-    /** Название файла
-     * @var string
-     */
-    public readonly string $name;
-    
-    
-    /**
-     * Директория для загрузки файла
-     * @var string
-     */
-    public readonly string $path;
-    
-    
-    public function __construct(object $id, string $entity, string $name, object $dir, string $path) {
-        $this->id = $id;
-        $this->name = $name;
-        $this->dir = $dir;
-        $this->entity = $entity;
-        $this->path = $path;
-    }
-    
+	/**
+	 * Идентификатор сущности для обновления CDN (UID)
+	 *
+	 * @var object
+	 */
+	public readonly object $id;
+	
+	/**
+	 * Идентификатор сущности ля обновления CDN (UID)
+	 *
+	 * @var object
+	 */
+	public readonly object $dir;
+	
+	/**
+	 * Класс сущности
+	 *
+	 * @var string
+	 */
+	public readonly string $entity;
+	
+	/** Название файла
+	 *
+	 * @var string
+	 */
+	public readonly string $name;
+	
+	/**
+	 * Директория для загрузки файла
+	 *
+	 * @var string
+	 */
+	public readonly string $path;
+	
+	
+	public function __construct(object $id, string $entity, string $name, object $dir, string $path)
+	{
+		$this->id = $id;
+		$this->name = $name;
+		$this->dir = $dir;
+		$this->entity = $entity;
+		$this->path = $path;
+	}
+	
 }
 

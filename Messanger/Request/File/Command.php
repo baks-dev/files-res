@@ -20,37 +20,41 @@ namespace BaksDev\Files\Resources\Messanger\Request\File;
 
 final class Command
 {
-    /**
-     * Класс сущности
-     * @var string
-     */
-    public readonly string $entity;
-    
-    /**
-     * Идентификатор (UID)
-     * @var object
-     */
-    public readonly object $id;
-    
-    /** Название файла
-     * @var string
-     */
-    public readonly string $name;
-    
-    
-    /**
-     * Директория для загрузки файла
-     * @var string
-     */
-    public readonly string $dir;
-    
-    
-    public function __construct(object $id, string $entity, string $name, string $dir) {
-        $this->id = $id;
-        $this->name = $name;
-        $this->dir = $dir;
-        $this->entity = $entity;
-    }
-    
+	/**
+	 * Класс сущности
+	 *
+	 * @var string
+	 */
+	public readonly string $entity;
+	
+	/**
+	 * Идентификатор (UID)
+	 *
+	 * @var object
+	 */
+	public readonly object $id;
+	
+	/** Название файла
+	 *
+	 * @var string
+	 */
+	public readonly string $name;
+	
+	/**
+	 * Директория для загрузки файла
+	 *
+	 * @var string
+	 */
+	public readonly string $dir;
+	
+	
+	public function __construct(object $id, string $entity, string $name, string $dir)
+	{
+		$this->id = $id;
+		$this->name = $name;
+		$this->dir = $dir;
+		$this->entity = $entity;
+	}
+	
 }
 
