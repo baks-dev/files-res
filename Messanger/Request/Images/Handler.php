@@ -63,7 +63,8 @@ final class Handler
 		}
 		
 		/* Абсолютный путь к файлу изображения */
-		$uploadFile = $this->parameter->get($command->path).$command->dir.'/'.$command->name;
+		$uploadDir = $this->parameter->get($command->path).$command->dir;
+		$uploadFile = $uploadDir.'/'.$command->name;
 		
 		if(!file_exists($uploadFile))
 		{
@@ -91,14 +92,29 @@ final class Handler
 		
 		if($request->getStatusCode() !== 200)
 		{
-			throw new RecoverableMessageHandlingException('Error upload file CDN');
+			throw new RecoverableMessageHandlingException(sprintf('Error upload file CDN (%s)', $request->getContent()));
 		}
 		
 		/* Обновляем сущность на CDN файла */
 		$imgEntity->updCdn('webp');
 		$this->entityManager->flush();
 		
+		/* Удаляем оригинал если файл загружен на CDN */
+		unlink($uploadFile);
+		
+		if($this->is_dir_empty($uploadDir))
+		{
+			rmdir($uploadDir);
+		}
+		
 		return true;
+	}
+	
+	
+	private function is_dir_empty($dir)
+	{
+		if (!is_readable($dir)) return null;
+		return (count(scandir($dir)) === 2);
 	}
 	
 }
