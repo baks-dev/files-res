@@ -21,18 +21,25 @@ namespace BaksDev\Files\Resources\Messanger\Request\File;
 final class Command
 {
 	/**
+	 * Идентификатор сущности для обновления CDN (UID)
+	 *
+	 * @var object
+	 */
+	public readonly object $id;
+	
+	/**
+	 * Идентификатор сущности ля обновления CDN (UID)
+	 *
+	 * @var object
+	 */
+	public readonly object $dir;
+	
+	/**
 	 * Класс сущности
 	 *
 	 * @var string
 	 */
 	public readonly string $entity;
-	
-	/**
-	 * Идентификатор (UID)
-	 *
-	 * @var object
-	 */
-	public readonly object $id;
 	
 	/** Название файла
 	 *
@@ -45,16 +52,16 @@ final class Command
 	 *
 	 * @var string
 	 */
-	public readonly string $dir;
+	public readonly string $path;
 	
 	
-	public function __construct(object $id, string $entity, string $name, string $dir)
+	public function __construct(object $id, string $entity, string $name, object $dir, string $path)
 	{
 		$this->id = $id;
 		$this->name = $name;
 		$this->dir = $dir;
 		$this->entity = $entity;
+		$this->path = $path;
 	}
-	
 }
 

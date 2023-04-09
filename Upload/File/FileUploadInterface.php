@@ -19,10 +19,11 @@
 namespace BaksDev\Files\Resources\Upload\File;
 
 use BaksDev\Files\Resources\Upload\UploadEntityInterface;
+use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 interface FileUploadInterface
 {
-	public function upload(string $parameterUploadDir, UploadedFile $file, UploadEntityInterface $entity) : void;
+	public function upload(File|UploadedFile $file, UploadEntityInterface $entity) : void;
 	
 }

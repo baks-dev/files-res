@@ -18,18 +18,17 @@
 
 namespace BaksDev\Files\Resources\Upload\File;
 
-use BaksDev\Files\Resources\Messanger\Request\Images\Command;
+use BaksDev\Files\Resources\Messanger\Request\File\Command;
 use BaksDev\Files\Resources\Upload\UploadEntityInterface;
-use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
+use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
-use Symfony\Component\Uid\Ulid;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class FileUpload implements FileUploadInterface
@@ -44,6 +43,8 @@ final class FileUpload implements FileUploadInterface
 	
 	private ParameterBagInterface $parameter;
 	
+	private Filesystem $filesystem;
+	
 	
 	public function __construct(
 		LoggerInterface $logger,
@@ -51,6 +52,7 @@ final class FileUpload implements FileUploadInterface
 		TranslatorInterface $translator,
 		MessageBusInterface $bus,
 		ParameterBagInterface $parameter,
+		Filesystem $filesystem,
 	)
 	{
 		$this->logger = $logger;
@@ -58,34 +60,28 @@ final class FileUpload implements FileUploadInterface
 		$this->translator = $translator;
 		$this->bus = $bus;
 		$this->parameter = $parameter;
+		$this->filesystem = $filesystem;
 	}
 	
 	
-	public function upload(string $parameterUploadDir, UploadedFile $file, UploadEntityInterface $entity) : void
+	public function upload(File|UploadedFile $file, UploadEntityInterface $entity) : void
 	{
 		$name = uniqid('', false);
-		
-		//        /* Получаем название директории по классу */
-		//        $entityDir = explode('Entity', get_class($entity));
-		//        $entityDir = str_replace('\\', '/', strtolower($entityDir[1]));
-		
-		//$dirId = null;
-		
-		//        if(method_exists($entity, 'getEvent'))
-		//        {
-		//            $dirId = $entity->getEvent()->getId();
-		//        }
-		//        else if(method_exists($entity, 'getId'))
-		//        {
-		//            $dirId = $entity->getId();
-		//        }
-		
 		$dirId = $entity->getUploadDir();
 		
 		if(empty($dirId))
 		{
-			throw new \RuntimeException(sprintf('Not found ID in class %s', get_class($entity)));
+			throw new InvalidArgumentException(sprintf('Not found ID in class %s', get_class($entity)));
 		}
+		
+		
+		/* Определяем директорию загрузки файла по названию таблицы */
+		$parameterUploadDir = $entity::TABLE;
+		$uploadDir = $this->parameter->get($parameterUploadDir).$dirId;
+		
+		/* Создаем директорию Для загрузки */
+		$this->filesystem->mkdir($uploadDir);
+		
 		
 		/* Перемещаем файл в директорию */
 		try
@@ -106,7 +102,7 @@ final class FileUpload implements FileUploadInterface
 			$entity->updFile($name, $move->getExtension(), $move->getSize());
 			
 			/* Создаем комманду отправки файла CDN */
-			$command = new Command($dirId, get_class($entity), $newFilename, $parameterUploadDir);
+			$command = new Command($entity->getId(), get_class($entity), $newFilename, $dirId, $parameterUploadDir);
 			$this->bus->dispatch($command);
 			
 		}
@@ -116,8 +112,8 @@ final class FileUpload implements FileUploadInterface
 			$this->request->getSession()->getFlashBag()->add(
 				'danger',
 				$name.": ".$this->translator->trans(
-					'error.product.upload.photo',
-					domain: 'product.product'
+					'error.upload.file',
+					domain: 'files.res'
 				)
 			);
 		}

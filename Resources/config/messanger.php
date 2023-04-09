@@ -18,6 +18,7 @@
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
+use BaksDev\Files\Resources\Messanger\Request;
 use Symfony\Config\FrameworkConfig;
 
 return static function(ContainerConfigurator $configurator, FrameworkConfig $framework) {
@@ -38,6 +39,7 @@ return static function(ContainerConfigurator $configurator, FrameworkConfig $fra
 		->exclude(__DIR__.'/../../Messanger/**/*Command.php')
 	;
 	
+	
 	/*
         php bin/console messenger:stop-workers
         php bin/console messenger:consume async_files_resources --time-limit=3600 -vv
@@ -54,7 +56,11 @@ return static function(ContainerConfigurator $configurator, FrameworkConfig $fra
 		->service(null)
 	;
 	
-	$framework->messenger()->routing(\BaksDev\Files\Resources\Messanger\Request\Images\Command::class)->senders(
+	$framework->messenger()->routing(Request\Images\Command::class)->senders(
+		['async_files_resources']
+	);
+	
+	$framework->messenger()->routing(Request\File\Command::class)->senders(
 		['async_files_resources']
 	);
 };

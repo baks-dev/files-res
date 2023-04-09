@@ -20,16 +20,15 @@ namespace BaksDev\Files\Resources\Upload\Image;
 
 use BaksDev\Files\Resources\Messanger\Request\Images\Command;
 use BaksDev\Files\Resources\Upload\UploadEntityInterface;
-use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
+use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -75,12 +74,10 @@ final class ImageUpload implements ImageUploadInterface
 	 * @return void
 	 * @throws Exception
 	 */
-	public function upload(UploadedFile $file, UploadEntityInterface $entity) : void
+	public function upload(File|UploadedFile $file, UploadEntityInterface $entity) : void
 	{
 		$name = uniqid('', false);
 		$dirId = $entity->getUploadDir();
-		
-		//dump($dirId);
 		
 		if(empty($dirId))
 		{
@@ -97,9 +94,9 @@ final class ImageUpload implements ImageUploadInterface
 		/* Перемещаем файл в директорию */
 		try
 		{
-			
 			/* Генерируем новое название файла с расширением */
 			$newFilename = $name.'.'.$file->guessExtension();
+			
 			
 			/* Перемещаем файл */
 			$move = $file->move(
@@ -114,8 +111,6 @@ final class ImageUpload implements ImageUploadInterface
 			$entity->updFile($name, $move->getExtension(), $move->getSize());
 			
 			/* Создаем комманду отправки файла CDN */
-			//(object $id, string $entity, string $name, string $dir)
-			
 			$command = new Command($entity->getId(), get_class($entity), $newFilename, $dirId, $parameterUploadDir);
 			$this->bus->dispatch($command);
 			
@@ -126,7 +121,8 @@ final class ImageUpload implements ImageUploadInterface
 			$this->request->getSession()->getFlashBag()->add(
 				'danger',
 				$name.": ".$this->translator->trans(
-					'Ошибка при загрузке'
+					'error.upload.file',
+					domain: 'files.res'
 				)
 			);
 		}

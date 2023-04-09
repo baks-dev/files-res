@@ -34,69 +34,86 @@ final class Handler
 	
 	private EntityManagerInterface $entityManager;
 	
-	//private LoggerInterface $logger;
 	private HttpClientInterface $httpClient;
 	
 	private ParameterBagInterface $parameter;
 	
 	
-	//private KernelInterface $kernel;
-	
 	public function __construct(
 		EntityManagerInterface $entityManager,
-		//LoggerInterface $logger,
 		HttpClientInterface $httpClient,
 		ParameterBagInterface $parameter,
-		KernelInterface $kernel,
 	)
 	{
 		$this->entityManager = $entityManager;
-		//$this->logger = $logger;
 		$this->httpClient = $httpClient;
 		$this->parameter = $parameter;
-		//$this->kernel = $kernel;
 	}
 	
 	
 	public function handle(Command $command) : bool|string
 	{
+		/* @var UploadEntityInterface $imgEntity */
+		$imgEntity = $this->entityManager->getRepository($command->entity)->find($command->id);
 		
-		// dump('$command');
-		//dd($command);
+		if($imgEntity === null)
+		{
+			throw new RecoverableMessageHandlingException('Error get Entity ID:'.$command->id);
+		}
 		
 		/* Абсолютный путь к файлу изображения */
-		$uploadFile = $this->parameter->get($command->dir).$command->id.'/'.$command->name;
+		$uploadDir = $this->parameter->get($command->path).$command->dir;
+		$uploadFile = $uploadDir.'/'.$command->name;
+		
+		if(!file_exists($uploadFile))
+		{
+			throw new RecoverableMessageHandlingException(sprintf('File Not found: %s', $uploadFile));
+		}
 		
 		/* Указываем путь и название файла для загрузки CDN */
 		$formFields = [
-			'dir' => $command->dir,
-			'id' => $command->id,
-			'image' => DataPart::fromPath($uploadFile),
+			'path' => $command->path,
+			'dir' => (string) $command->dir,
+			'file' => DataPart::fromPath($uploadFile),
 		];
 		
+		/* Формируем заголовки файла и авторизации CDN */
 		$formData = new FormDataPart($formFields);
+		$headers = $formData->getPreparedHeaders()->toArray();
+		$headers[] = 'Authorization: Basic '.base64_encode($this->parameter->get('cdn.user'
+				).':'.$this->parameter->get('cdn.pass')
+			);
 		
 		$request = $this->httpClient->request('POST', $this->parameter->get('cdn.host').self::PATH_FILE_CDN, [
-			'headers' => $formData->getPreparedHeaders()->toArray(),
+			'headers' => $headers,
 			'body' => $formData->bodyToString(),
 		]);
 		
 		if($request->getStatusCode() !== 200)
 		{
-			throw new RecoverableMessageHandlingException('Error upload file CDN');
+			throw new RecoverableMessageHandlingException(sprintf('Error upload file CDN (%s)', $request->getContent()));
 		}
 		
-		/* @var UploadEntityInterface $imgEntity */
-		$imgEntity = $this->entityManager->getRepository($command->entity)->find($command->id);
-		
 		/* Обновляем сущность на CDN файла */
-		if($imgEntity)
+		$imgEntity->updCdn('webp');
+		$this->entityManager->flush();
+		
+		/* Удаляем оригинал если файл загружен на CDN */
+		unlink($uploadFile);
+		
+		if($this->is_dir_empty($uploadDir))
 		{
-			$imgEntity->updCdn('webp');
-			$this->entityManager->flush();
+			rmdir($uploadDir);
 		}
 		
 		return true;
+	}
+	
+	
+	private function is_dir_empty($dir)
+	{
+		if (!is_readable($dir)) return null;
+		return (count(scandir($dir)) === 2);
 	}
 	
 }
