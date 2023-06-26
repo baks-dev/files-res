@@ -18,6 +18,7 @@
 
 namespace BaksDev\Files\Resources\Upload\File;
 
+use BaksDev\Core\Services\Messenger\MessageDispatchInterface;
 use BaksDev\Files\Resources\Messanger\Request\File\Command;
 use BaksDev\Files\Resources\Upload\UploadEntityInterface;
 use InvalidArgumentException;
@@ -28,7 +29,6 @@ use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class FileUpload implements FileUploadInterface
@@ -39,29 +39,30 @@ final class FileUpload implements FileUploadInterface
 	
 	private TranslatorInterface $translator;
 	
-	private MessageBusInterface $bus;
-	
+
 	private ParameterBagInterface $parameter;
 	
 	private Filesystem $filesystem;
-	
-	
-	public function __construct(
+    private MessageDispatchInterface $messageDispatch;
+
+
+    public function __construct(
 		LoggerInterface $logger,
 		RequestStack $request,
 		TranslatorInterface $translator,
-		MessageBusInterface $bus,
 		ParameterBagInterface $parameter,
 		Filesystem $filesystem,
+        MessageDispatchInterface $messageDispatch
 	)
 	{
 		$this->logger = $logger;
 		$this->request = $request;
 		$this->translator = $translator;
-		$this->bus = $bus;
+
 		$this->parameter = $parameter;
 		$this->filesystem = $filesystem;
-	}
+        $this->messageDispatch = $messageDispatch;
+    }
 	
 	
 	public function upload(File|UploadedFile $file, UploadEntityInterface $entity) : void
@@ -100,11 +101,15 @@ final class FileUpload implements FileUploadInterface
 			 *  $name - название файла без расширения
 			 */
 			$entity->updFile($name, $move->getExtension(), $move->getSize());
+
+
+            /* Отправляем событие в шину  */
+            $this->messageDispatch->dispatch(
+                message: new Command($entity->getId(), get_class($entity), $newFilename, $dirId, $parameterUploadDir),
+                transport: 'resources'
+            );
 			
-			/* Создаем комманду отправки файла CDN */
-			$command = new Command($entity->getId(), get_class($entity), $newFilename, $dirId, $parameterUploadDir);
-			$this->bus->dispatch($command);
-			
+
 		}
 		catch(FileException $e)
 		{
