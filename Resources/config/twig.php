@@ -9,5 +9,5 @@ use Symfony\Config\TwigConfig;
 
 return static function(TwigConfig $config) {
 	
-	$config->global('cdn_host')->value('%env(CDN_HOST)%');
+	$config->global('CDN_HOST')->value('https://%env(CDN_HOST)%');
 };

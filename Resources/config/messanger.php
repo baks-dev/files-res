@@ -28,10 +28,10 @@ return static function (ContainerConfigurator $configurator, FrameworkConfig $fr
         ->autoconfigure()
     ;
 
-    // Настройки вторизации CDN
-    $configurator->parameters()->set('cdn.host', '%env(CDN_HOST)%');
-    $configurator->parameters()->set('cdn.user', '%env(CDN_USER)%');
-    $configurator->parameters()->set('cdn.pass', '%env(CDN_PASS)%');
+    // Настройки авторизации CDN
+//    $configurator->parameters()->set('cdn.host', '%env(CDN_HOST)%');
+//    $configurator->parameters()->set('cdn.user', '%env(CDN_USER)%');
+//    $configurator->parameters()->set('cdn.pass', '%env(CDN_PASS)%');
 
     $namespace = 'BaksDev\Files\Resources';
 

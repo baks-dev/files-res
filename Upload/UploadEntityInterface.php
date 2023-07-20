@@ -20,12 +20,16 @@ namespace BaksDev\Files\Resources\Upload;
 
 interface UploadEntityInterface
 {
-	public function updFile(string $name, string $ext, int $size) : void;
-	
-	
-	public function updCdn(string $ext) : void;
-	
-	
-	public function getUploadDir() : object;
-	
+
+    public function updFile(string $name, string $ext, int $size): void;
+
+
+    public function updCdn(string $ext): void;
+
+
+    public function getUploadDir(): object;
+
+
+    public static function getDirName(): string;
+
 }

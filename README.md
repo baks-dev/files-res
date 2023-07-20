@@ -1,6 +1,6 @@
 # BaksDev Files Resources
 
-![Version](https://img.shields.io/badge/version-6.3.0-blue) ![php 8.1+](https://img.shields.io/badge/php-min%208.1-red.svg)
+![Version](https://img.shields.io/badge/version-6.3.1-blue) ![php 8.1+](https://img.shields.io/badge/php-min%208.1-red.svg)
 
 Модуль файловых ресурсов
 
@@ -29,20 +29,15 @@ $ sudo sudo chmod 773 <path_to_project>/public/upload
 $ composer create-project symfony/skeleton <project_name>
 ```
 
-переходим в папку проекта CDN-ервера, устанавливаем и настроаиваем пакет ["Модуль CDN файловых ресурсов"](https://github.com/baks-dev/files-cdn)
+переходим в папку проекта CDN cервера, устанавливаем и настраиваем пакет ["Модуль CDN файловых ресурсов"](https://github.com/baks-dev/files-cdn)
 
 ***
 
-После настройки запустить очередь из сообщений `async_files_resources`
+Для асинхронной обработки запустить очередь из сообщений `resources`
 
 ``` bash
 $ php bin/console messenger:consume async_files_resources --time-limit=3600
 ``` 
-
-
-## Журнал изменений ![Changelog](https://img.shields.io/badge/changelog-yellow)
-
-О том, что изменилось за последнее время, обратитесь к [CHANGELOG](CHANGELOG.md) за дополнительной информацией.
 
 ## Лицензия ![License](https://img.shields.io/badge/MIT-green)
 
