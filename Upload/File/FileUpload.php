@@ -19,7 +19,7 @@
 namespace BaksDev\Files\Resources\Upload\File;
 
 use BaksDev\Core\Services\Messenger\MessageDispatchInterface;
-use BaksDev\Files\Resources\Messanger\Request\File\Command;
+use BaksDev\Files\Resources\Messanger\Request\File\CDNUploadFileMessage;
 use BaksDev\Files\Resources\Upload\UploadEntityInterface;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
@@ -105,7 +105,7 @@ final class FileUpload implements FileUploadInterface
 
             /* Отправляем событие в шину  */
             $this->messageDispatch->dispatch(
-                message: new Command($entity->getId(), get_class($entity), $newFilename, $dirId, $parameterUploadDir),
+                message: new CDNUploadFileMessage($entity->getId(), get_class($entity), $newFilename, $dirId, $parameterUploadDir),
                 transport: 'resources'
             );
 			

@@ -19,12 +19,13 @@
 namespace BaksDev\Files\Resources\Upload\Image;
 
 use BaksDev\Core\Services\Messenger\MessageDispatchInterface;
-use BaksDev\Files\Resources\Messanger\Request\Images\Command;
+use BaksDev\Files\Resources\Messanger\Request\Images\CDNUploadImageMessage;
 use BaksDev\Files\Resources\Upload\UploadEntityInterface;
+use BaksDev\Telegram\Bot\Messenger\Notifier\NotifierTelegramBotMessage;
 use Exception;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\HttpFoundation\File\File;
@@ -40,18 +41,18 @@ final class ImageUpload implements ImageUploadInterface
 	private RequestStack $request;
 	
 	private TranslatorInterface $translator;
-	
-	private ParameterBagInterface $parameter;
-	
+
 	private Filesystem $filesystem;
+
     private MessageDispatchInterface $messageDispatch;
+    private string $upload;
 
 
     public function __construct(
+        #[Autowire('%kernel.project_dir%/public/upload/')] string $upload,
 		LoggerInterface $logger,
 		RequestStack $request,
 		TranslatorInterface $translator,
-		ParameterBagInterface $parameter,
 		Filesystem $filesystem,
         MessageDispatchInterface $messageDispatch
 	)
@@ -59,9 +60,9 @@ final class ImageUpload implements ImageUploadInterface
 		$this->logger = $logger;
 		$this->request = $request;
 		$this->translator = $translator;
-		$this->parameter = $parameter;
 		$this->filesystem = $filesystem;
         $this->messageDispatch = $messageDispatch;
+        $this->upload = $upload;
     }
 	
 	
@@ -84,8 +85,7 @@ final class ImageUpload implements ImageUploadInterface
 		}
 		
 		/* Определяем директорию загрузки файла по названию таблицы */
-		$parameterUploadDir = $entity::TABLE;
-		$uploadDir = $this->parameter->get($parameterUploadDir).$dirId;
+        $uploadDir = $this->upload.$entity::TABLE.'/'.$dirId;
 		
 		/* Создаем директорию Для загрузки */
 		$this->filesystem->mkdir($uploadDir);
@@ -95,8 +95,7 @@ final class ImageUpload implements ImageUploadInterface
 		{
 			/* Генерируем новое название файла с расширением */
 			$newFilename = $name.'.'.$file->guessExtension();
-			
-			
+
 			/* Перемещаем файл */
 			$move = $file->move(
 				$uploadDir,
@@ -110,10 +109,9 @@ final class ImageUpload implements ImageUploadInterface
 			$entity->updFile($name, $move->getExtension(), $move->getSize());
 
 
-
             /* Отправляем событие в шину  */
             $this->messageDispatch->dispatch(
-                message: new Command($entity->getId(), get_class($entity), $newFilename, $dirId, $parameterUploadDir),
+                message: new CDNUploadImageMessage($entity->getId(), get_class($entity), $newFilename, $dirId),
                 transport: 'resources'
             );
 
@@ -121,6 +119,17 @@ final class ImageUpload implements ImageUploadInterface
 		}
 		catch(FileException $e)
 		{
+            if(class_exists(NotifierTelegramBotMessage::class))
+            {
+                $error = sprintf('%s ', $e->getMessage());
+                
+                /* Отправляем ошибку в Telegram  */
+                $this->messageDispatch->dispatch(
+                    message: new NotifierTelegramBotMessage($error),
+                    transport: 'telegram-bot'
+                );
+            }
+
 			$this->logger->error($e->getMessage());
 			$this->request->getSession()->getFlashBag()->add(
 				'danger',

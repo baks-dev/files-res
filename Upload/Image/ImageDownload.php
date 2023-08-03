@@ -18,23 +18,18 @@
 namespace BaksDev\Files\Resources\Upload\Image;
 
 use BaksDev\Core\Services\Messenger\MessageDispatchInterface;
-use BaksDev\Files\Resources\Messanger\Request\Images\Command;
+use BaksDev\Files\Resources\Messanger\Request\Images\CDNUploadImageMessage;
 use BaksDev\Files\Resources\Upload\UploadEntityInterface;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class ImageDownload
 {
-    /**
-     * @var ParameterBagInterface
-     */
-    private ParameterBagInterface $parameter;
-
     private HttpClientInterface $client;
 
     private Filesystem $filesystem;
@@ -44,22 +39,22 @@ final class ImageDownload
     private LoggerInterface $logger;
 
     private MessageDispatchInterface $messageDispatch;
+    private string $upload;
 
     public function __construct(
-        ParameterBagInterface $parameter,
+        #[Autowire('%kernel.project_dir%/public/upload/')] string $upload,
         HttpClientInterface $client,
         Filesystem $filesystem,
         TranslatorInterface $translator,
         LoggerInterface $logger,
         MessageDispatchInterface $messageDispatch
     ) {
-        $this->parameter = $parameter;
         $this->client = $client;
         $this->filesystem = $filesystem;
-
         $this->translator = $translator;
         $this->logger = $logger;
         $this->messageDispatch = $messageDispatch;
+        $this->upload = $upload;
     }
 
     public function get(string $url, UploadEntityInterface $entity): void
@@ -69,13 +64,6 @@ final class ImageDownload
         $name = md5($url);
         $newFilename = $name.'.'.$originalFilename['extension'];
 
-        /* преобразуем ссылку в UID */
-        /*$stringDir = substr($name, 0, 8).'-'.
-            substr($name, 8, 4).'-'.
-            substr($name, 12, 4).'-'.
-            substr($name, 16, 4).'-'.
-            substr($name, 20);*/
-
         $dirId = $entity->getUploadDir();
 
         if (empty($dirId))
@@ -84,8 +72,7 @@ final class ImageDownload
         }
 
         /* Определяем директорию загрузки файла по названию таблицы */
-        $parameterUploadDir = $entity::TABLE;
-        $uploadDir = $this->parameter->get($parameterUploadDir).$dirId;
+        $uploadDir = $this->upload.$entity::TABLE.'/'.$dirId;
 
         /* Создаем директорию Для загрузки */
         $this->filesystem->mkdir($uploadDir);
@@ -132,14 +119,14 @@ final class ImageDownload
             $fileSize = filesize($path);
 
             /*
-             *  Применяем к сущности параметры файла
-             *  $name - название файла без расширения
+             * Применяем к сущности параметры файла
+             * $name - название файла без расширения
              */
             $entity->updFile($name, $originalFilename['extension'], $fileSize);
 
             /* Отправляем событие в шину  */
             $this->messageDispatch->dispatch(
-                message: new Command($entity->getId(), get_class($entity), $newFilename, $dirId, $parameterUploadDir),
+                message: new CDNUploadImageMessage($entity->getId(), get_class($entity), $newFilename, $dirId),
                 transport: 'resources'
             );
         }

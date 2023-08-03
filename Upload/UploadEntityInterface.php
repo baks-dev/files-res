@@ -29,6 +29,7 @@ interface UploadEntityInterface
 
     public function getUploadDir(): object;
 
+    public function getDir(): mixed;
 
     public static function getDirName(): string;
 
