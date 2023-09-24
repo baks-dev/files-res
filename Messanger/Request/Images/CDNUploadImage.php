@@ -73,6 +73,8 @@ final class CDNUploadImage
 
     public function __invoke(CDNUploadImageMessage $command): bool|string
     {
+        $this->entityManager->clear();
+
         /* @var UploadEntityInterface $imgEntity */
         $imgEntity = $this->entityManager->getRepository($command->entity)->find($command->id);
 

@@ -18,7 +18,7 @@
 
 namespace BaksDev\Files\Resources\Upload\Image;
 
-use BaksDev\Core\Services\Messenger\MessageDispatchInterface;
+use BaksDev\Core\Messenger\MessageDispatchInterface;
 use BaksDev\Files\Resources\Messanger\Request\Images\CDNUploadImageMessage;
 use BaksDev\Files\Resources\Upload\UploadEntityInterface;
 use BaksDev\Telegram\Bot\Messenger\Notifier\NotifierTelegramBotMessage;

@@ -18,7 +18,7 @@
 
 namespace BaksDev\Files\Resources\Upload\File;
 
-use BaksDev\Core\Services\Messenger\MessageDispatchInterface;
+use BaksDev\Core\Messenger\MessageDispatchInterface;
 use BaksDev\Files\Resources\Messanger\Request\File\CDNUploadFileMessage;
 use BaksDev\Files\Resources\Upload\UploadEntityInterface;
 use InvalidArgumentException;
