@@ -23,30 +23,49 @@ final class CDNUploadImageMessage
 	/**
 	 * Идентификатор сущности для обновления CDN (UID)
 	 */
-	public readonly object $id;
+	private readonly object $id;
 	
 	/**
-	 * Идентификатор сущности ля обновления CDN (UID)
+	 * Директория загрузки файла
 	 */
-	public readonly object $dir;
+    private readonly string $dir;
 	
 	/**
 	 * Класс сущности
 	 */
-	public readonly string $entity;
-	
-	/**
-     * Название файла
-	 */
-	public readonly string $name;
+    private readonly string $entity;
 
 
-	public function __construct(object $id, string $entity, string $name, object $dir)
+	public function __construct(object $id, string $entity, string $dir)
 	{
 		$this->id = $id;
-		$this->name = $name;
 		$this->dir = $dir;
 		$this->entity = $entity;
 	}
+
+    /**
+     * Id
+     */
+    public function getId(): object
+    {
+        return $this->id;
+    }
+
+    /**
+     * Dir
+     */
+    public function getDir(): string
+    {
+        return $this->dir;
+    }
+
+    /**
+     * Entity
+     */
+    public function getEntity(): string
+    {
+        return $this->entity;
+    }
+
 }
 

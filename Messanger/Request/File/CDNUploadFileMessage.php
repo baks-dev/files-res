@@ -20,32 +20,52 @@ namespace BaksDev\Files\Resources\Messanger\Request\File;
 
 final class CDNUploadFileMessage
 {
-	/**
-	 * Идентификатор сущности для обновления CDN (UID)
-	 */
-	public readonly object $id;
-	
-	/**
-	 * Идентификатор сущности ля обновления CDN (UID)
-	 */
-	public readonly object $dir;
-	
-	/**
-	 * Класс сущности
-	 */
-	public readonly string $entity;
-	
-	/**
-     * Название файла
-	 */
-	public readonly string $name;
+    /**
+     * Идентификатор сущности для обновления CDN (UID)
+     */
+    private readonly object $id;
 
-	public function __construct(object $id, string $entity, string $name, object $dir)
-	{
-		$this->id = $id;
-		$this->name = $name;
-		$this->dir = $dir;
-		$this->entity = $entity;
-	}
+    /**
+     * Директория загрузки файла
+     */
+    private readonly string $dir;
+
+    /**
+     * Класс сущности
+     */
+    private readonly string $entity;
+
+
+    public function __construct(object $id, string $entity, string $dir)
+    {
+        $this->id = $id;
+        $this->dir = $dir;
+        $this->entity = $entity;
+    }
+
+    /**
+     * Id
+     */
+    public function getId(): object
+    {
+        return $this->id;
+    }
+
+    /**
+     * Dir
+     */
+    public function getDir(): string
+    {
+        return $this->dir;
+    }
+
+    /**
+     * Entity
+     */
+    public function getEntity(): string
+    {
+        return $this->entity;
+    }
+
 }
 

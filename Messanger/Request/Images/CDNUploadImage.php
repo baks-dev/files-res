@@ -76,16 +76,20 @@ final class CDNUploadImage
         $this->entityManager->clear();
 
         /* @var UploadEntityInterface $imgEntity */
-        $imgEntity = $this->entityManager->getRepository($command->entity)->find($command->id);
+        $imgEntity = $this->entityManager->getRepository($command->getEntity())->find($command->getId());
 
+
+        /** Если не найдена сущность, возможно она еще не сохранилась,
+         * и её необходимо отпарить позже через комманду repack
+         */
         if($imgEntity === null)
         {
             return false;
         }
 
         /* Абсолютный путь к файлу изображения */
-        $uploadDir = $this->upload.$imgEntity::TABLE.'/'.$command->dir;
-        $uploadFile = $uploadDir.'/'.$command->name;
+        $uploadDir = $this->upload.$imgEntity::TABLE.'/'.$command->getDir();
+        $uploadFile = $uploadDir.'/image.'.$imgEntity->getExt();
 
         if(!file_exists($uploadFile))
         {
@@ -94,21 +98,20 @@ final class CDNUploadImage
 
         /* Указываем путь и название файла для загрузки CDN */
         $formFields = [
-            'dir' => (string) $command->dir,
+            'dir' => $imgEntity::TABLE.'/'.$command->getDir(),
             'image' => DataPart::fromPath($uploadFile),
         ];
 
         /* Формируем заголовки файла и авторизации CDN */
         $formData = new FormDataPart($formFields);
         $headers = $formData->getPreparedHeaders()->toArray();
-        $headers[] = 'Authorization: Basic '.base64_encode($this->CDN_USER.':'.$this->CDN_PASS
-            );
+        $headers[] = 'Authorization: Basic '.base64_encode($this->CDN_USER.':'.$this->CDN_PASS);
 
 
         /* Отправляем запрос на загрузку файла серверу CDN */
         $request = $this->httpClient->request(
             'POST',
-            'https://'.$this->CDN_HOST.self::PATH_IMAGE_CDN.'/'.$imgEntity::TABLE,
+            'https://'.$this->CDN_HOST.self::PATH_IMAGE_CDN,
             [
                 'headers' => $headers,
                 'body' => $formData->bodyToString(),
@@ -118,6 +121,7 @@ final class CDNUploadImage
         {
             throw new RecoverableMessageHandlingException(sprintf('Error upload file CDN (%s)', $request->getContent()));
         }
+
 
         /* Обновляем сущность на CDN файла */
         $imgEntity->updCdn('webp');

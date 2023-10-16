@@ -23,6 +23,7 @@ use BaksDev\Files\Resources\Messanger\Request\File\CDNUploadFileMessage;
 use BaksDev\Files\Resources\Upload\UploadEntityInterface;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
@@ -33,95 +34,89 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class FileUpload implements FileUploadInterface
 {
-	private LoggerInterface $logger;
-	
-	private RequestStack $request;
-	
-	private TranslatorInterface $translator;
-	
+    private LoggerInterface $logger;
 
-	private ParameterBagInterface $parameter;
-	
-	private Filesystem $filesystem;
+    private RequestStack $request;
+
+    private TranslatorInterface $translator;
+
+
+    private ParameterBagInterface $parameter;
+
+    private Filesystem $filesystem;
     private MessageDispatchInterface $messageDispatch;
+    private string $upload;
 
 
     public function __construct(
-		LoggerInterface $logger,
-		RequestStack $request,
-		TranslatorInterface $translator,
-		ParameterBagInterface $parameter,
-		Filesystem $filesystem,
+        #[Autowire('%kernel.project_dir%/public/upload/')] string $upload,
+        LoggerInterface $logger,
+        RequestStack $request,
+        TranslatorInterface $translator,
+        ParameterBagInterface $parameter,
+        Filesystem $filesystem,
         MessageDispatchInterface $messageDispatch
-	)
-	{
-		$this->logger = $logger;
-		$this->request = $request;
-		$this->translator = $translator;
+    )
+    {
+        $this->logger = $logger;
+        $this->request = $request;
+        $this->translator = $translator;
 
-		$this->parameter = $parameter;
-		$this->filesystem = $filesystem;
+        $this->parameter = $parameter;
+        $this->filesystem = $filesystem;
         $this->messageDispatch = $messageDispatch;
+        $this->upload = $upload;
     }
-	
-	
-	public function upload(File|UploadedFile $file, UploadEntityInterface $entity) : void
-	{
-		$name = uniqid('', false);
-		$dirId = $entity->getUploadDir();
-		
-		if(empty($dirId))
-		{
-			throw new InvalidArgumentException(sprintf('Not found ID in class %s', get_class($entity)));
-		}
-		
-		
-		/* Определяем директорию загрузки файла по названию таблицы */
-		$parameterUploadDir = $entity::TABLE;
-		$uploadDir = $this->parameter->get($parameterUploadDir).$dirId;
-		
-		/* Создаем директорию Для загрузки */
-		$this->filesystem->mkdir($uploadDir);
-		
-		
-		/* Перемещаем файл в директорию */
-		try
-		{
-			/* Генерируем новое название файла с расширением */
-			$newFilename = $name.'.'.$file->guessExtension();
-			
-			/* Перемещаем файл */
-			$move = $file->move(
-				$this->parameter->get($parameterUploadDir).$dirId,
-				$newFilename
-			);
-			
-			/**
-			 *  Применяем к сущности параметры файла
-			 *  $name - название файла без расширения
-			 */
-			$entity->updFile($name, $move->getExtension(), $move->getSize());
 
+
+    public function upload(File|UploadedFile $file, UploadEntityInterface $entity): void
+    {
+
+        $name = md5_file($file->getPathname());
+
+        if(empty($name))
+        {
+            throw new InvalidArgumentException(sprintf('Not found file in class %s', get_class($entity)));
+        }
+
+
+        /* Определяем директорию загрузки файла по названию таблицы */
+        $uploadDir = $this->upload.$entity::TABLE.'/'.$name;
+
+        /* Создаем директорию Для загрузки */
+        $this->filesystem->mkdir($uploadDir);
+
+
+        /* Перемещаем файл в директорию */
+        try
+        {
+            /* Генерируем новое название файла с расширением */
+            $newFilename = 'file.'.$file->guessExtension();
+
+            if(!file_exists($uploadDir.'/'.$newFilename))
+            {
+                /* Перемещаем файл */
+                $file->move(
+                    $uploadDir,
+                    $newFilename
+                );
+            }
+
+            $extension = pathinfo($uploadDir.'/'.$newFilename, PATHINFO_EXTENSION);
+            $size = filesize($file);
+            $entity->updFile($name, $extension, $size);
 
             /* Отправляем событие в шину  */
             $this->messageDispatch->dispatch(
-                message: new CDNUploadFileMessage($entity->getId(), get_class($entity), $newFilename, $dirId, $parameterUploadDir),
+                message: new CDNUploadFileMessage($entity->getId(), get_class($entity), $name),
                 transport: 'resources'
             );
-			
 
-		}
-		catch(FileException $e)
-		{
-			$this->logger->error($e->getMessage());
-			$this->request->getSession()->getFlashBag()->add(
-				'danger',
-				$name.": ".$this->translator->trans(
-					'error.upload.file',
-					domain: 'files.res'
-				)
-			);
-		}
-	}
-	
+        }
+        catch(FileException $e)
+        {
+            $this->logger->error($e->getMessage(), [__FILE__.':'.__LINE__]);
+        }
+    }
+
 }

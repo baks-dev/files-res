@@ -70,22 +70,21 @@ final class CDNUploadFile
         $this->CDN_PASS = $CDN_PASS;
     }
 
-
     public function __invoke(CDNUploadFileMessage $command): bool|string
     {
         $this->entityManager->clear();
         
         /* @var UploadEntityInterface $imgEntity */
-        $imgEntity = $this->entityManager->getRepository($command->entity)->find($command->id);
+        $imgEntity = $this->entityManager->getRepository($command->getEntity())->find($command->getId());
 
         if($imgEntity === null)
         {
-            throw new RecoverableMessageHandlingException('Error get Entity ID:'.$command->id);
+            throw new RecoverableMessageHandlingException('Error get Entity ID:'.$command->getId());
         }
 
         /* Абсолютный путь к файлу изображения */
-        $uploadDir = $this->upload.$imgEntity::TABLE.'/'.$command->dir;
-        $uploadFile = $uploadDir.'/'.$command->name;
+        $uploadDir = $this->upload.$imgEntity::TABLE.'/'.$command->getDir();
+        $uploadFile = $uploadDir.'/file.'.$imgEntity->getExt();
 
         if(!file_exists($uploadFile))
         {
@@ -94,18 +93,20 @@ final class CDNUploadFile
 
         /* Указываем путь и название файла для загрузки CDN */
         $formFields = [
-            'dir' => (string) $command->dir,
+            'dir' => $command->getDir(),
             'file' => DataPart::fromPath($uploadFile),
         ];
+
 
         /* Формируем заголовки файла и авторизации CDN */
         $formData = new FormDataPart($formFields);
         $headers = $formData->getPreparedHeaders()->toArray();
         $headers[] = 'Authorization: Basic '.base64_encode($this->CDN_USER.':'.$this->CDN_PASS);
 
+
         $request = $this->httpClient->request(
             'POST',
-            'https://'.$this->CDN_HOST.self::PATH_FILE_CDN.'/'.$imgEntity::TABLE,
+            'https://'.$this->CDN_HOST.self::PATH_FILE_CDN,
             [
                 'headers' => $headers,
                 'body' => $formData->bodyToString(),
@@ -117,7 +118,7 @@ final class CDNUploadFile
         }
 
         /* Обновляем сущность на CDN файла */
-        $imgEntity->updCdn('webp');
+        $imgEntity->updCdn();
         $this->entityManager->flush();
 
         /* Удаляем оригинал если файл загружен на CDN */
