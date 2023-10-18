@@ -1,6 +1,6 @@
 # BaksDev Files Resources
 
-![Version](https://img.shields.io/badge/version-6.3.4-blue) ![php 8.1+](https://img.shields.io/badge/php-min%208.1-red.svg)
+![Version](https://img.shields.io/badge/version-6.3.5-blue) ![php 8.1+](https://img.shields.io/badge/php-min%208.1-red.svg)
 
 Модуль файловых ресурсов
 
@@ -13,7 +13,7 @@ $ composer require baks-dev/files-res
 ## Настройки
 
 
-Добавить диреткорию и установить права для загрзуки обложек категорий:
+Добавить директорию и установить права для загрузки обложек категорий:
 
 ``` bash
 $ sudo mkdir <path_to_project>/public/upload
@@ -29,7 +29,7 @@ $ sudo sudo chmod 773 <path_to_project>/public/upload
 $ composer create-project symfony/skeleton <project_name>
 ```
 
-переходим в папку проекта CDN cервера, устанавливаем и настраиваем пакет ["Модуль CDN файловых ресурсов"](https://github.com/baks-dev/files-cdn)
+Переходим в папку проекта CDN cервера, устанавливаем и настраиваем пакет ["Модуль CDN файловых ресурсов"](https://github.com/baks-dev/files-cdn)
 
 ***
 
