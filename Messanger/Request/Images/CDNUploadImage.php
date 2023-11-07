@@ -78,7 +78,6 @@ final class CDNUploadImage
         /* @var UploadEntityInterface $imgEntity */
         $imgEntity = $this->entityManager->getRepository($command->getEntity())->find($command->getId());
 
-
         /** Если не найдена сущность, возможно она еще не сохранилась,
          * и её необходимо отпарить позже через комманду repack
          */
@@ -93,6 +92,20 @@ final class CDNUploadImage
 
         if(!file_exists($uploadFile))
         {
+            /** Если файла не существует - проверяем что он имеется на CDN */
+            $request = $this->httpClient->request(
+                'GET',
+                'https://'.$this->CDN_HOST.'/upload/'.$imgEntity::TABLE.'/'.$command->getDir().'/min.webp'
+            );
+
+            if($request->getStatusCode() === 200)
+            {
+                /* Обновляем сущность на CDN файла */
+                $imgEntity->updCdn('webp');
+                $this->entityManager->flush();
+                return true;
+            }
+
             throw new RecoverableMessageHandlingException(sprintf('File Not found: %s', $uploadFile));
         }
 
