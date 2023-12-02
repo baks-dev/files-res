@@ -21,12 +21,10 @@
     }
   ],
   "require": {
-    "php": ">=8.1",
-    "symfony/http-client": "^6.2"
+    "php": ">=8.2"
   },
   "require-dev": {
-    "roave/security-advisories": "dev-latest",
-    "symfony/test-pack": "^1.0"
+    "roave/security-advisories": "dev-latest"
   },
   "autoload": {
     "psr-4": {
