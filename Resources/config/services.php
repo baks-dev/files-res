@@ -15,7 +15,12 @@ return static function(ContainerConfigurator $configurator) {
 
 
     $services->load($NAMESPACE, $MODULE)
-        ->exclude($MODULE.'{Entity,Resources,Type,*DTO.php,*Message.php}');
+        ->exclude([
+            $MODULE.'{Entity,Resources,Type}',
+            $MODULE.'**/*Message.php',
+            $MODULE.'**/*DTO.php',
+        ])
+    ;
 
 };
 
