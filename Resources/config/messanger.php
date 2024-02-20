@@ -28,17 +28,16 @@ return static function (FrameworkConfig $framework) {
     $messenger
         ->transport('resources')
         ->dsn('%env(MESSENGER_TRANSPORT_DSN)%')
-        ->options(['queue_name' => 'resources'])
-        ->failureTransport('failed-resources')
+        ->options(['queue_name' => 'files-res'])
+        ->failureTransport('failed-files-res')
         ->retryStrategy()
         ->maxRetries(3)
         ->delay(1000)
         ->maxDelay(0)
         ->multiplier(3) // увеличиваем задержку перед каждой повторной попыткой
         ->service(null)
-
     ;
 
-    $messenger->transport('failed-resources')
+    $messenger->transport('failed-files-res')
         ->dsn('%env(MESSENGER_TRANSPORT_DSN)%');
 };
