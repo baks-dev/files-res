@@ -16,7 +16,7 @@
  *
  */
 
-namespace BaksDev\Files\Resources\Messanger\Request\Images;
+namespace BaksDev\Files\Resources\Messenger\Request\File;
 
 use BaksDev\Files\Resources\Upload\UploadEntityInterface;
 use Doctrine\ORM\EntityManagerInterface;
@@ -28,12 +28,12 @@ use Symfony\Component\Mime\Part\Multipart\FormDataPart;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 #[AsMessageHandler]
-final class CDNUploadImage
+final class CDNUploadFile
 {
     /**
-     * Конечная точка CDN для загрузки изображений
+     * Конечная точка CDN для загрузки файла
      */
-    private const PATH_IMAGE_CDN = '/cdn/upload/image';
+    public const PATH_FILE_CDN = '/cdn/upload/file';
 
     private EntityManagerInterface $entityManager;
 
@@ -63,57 +63,40 @@ final class CDNUploadImage
     {
         $this->entityManager = $entityManager;
         $this->httpClient = $httpClient;
-        $this->upload = $upload;
 
+        $this->upload = $upload;
         $this->CDN_HOST = $CDN_HOST;
         $this->CDN_USER = $CDN_USER;
         $this->CDN_PASS = $CDN_PASS;
     }
 
-
-    public function __invoke(CDNUploadImageMessage $command): bool|string
+    public function __invoke(CDNUploadFileMessage $command): bool|string
     {
         $this->entityManager->clear();
-
+        
         /* @var UploadEntityInterface $imgEntity */
         $imgEntity = $this->entityManager->getRepository($command->getEntity())->find($command->getId());
 
-        /** Если не найдена сущность, возможно она еще не сохранилась,
-         * и её необходимо отпарить позже через комманду repack
-         */
         if($imgEntity === null)
         {
-            return false;
+            throw new RecoverableMessageHandlingException('Error get Entity ID:'.$command->getId());
         }
 
         /* Абсолютный путь к файлу изображения */
         $uploadDir = $this->upload.$imgEntity::TABLE.'/'.$command->getDir();
-        $uploadFile = $uploadDir.'/image.'.$imgEntity->getExt();
+        $uploadFile = $uploadDir.'/file.'.$imgEntity->getExt();
 
         if(!file_exists($uploadFile))
         {
-            /** Если файла не существует - проверяем что он имеется на CDN */
-            $request = $this->httpClient->request(
-                'GET',
-                'https://'.$this->CDN_HOST.'/upload/'.$imgEntity::TABLE.'/'.$command->getDir().'/min.webp'
-            );
-
-            if($request->getStatusCode() === 200)
-            {
-                /* Обновляем сущность на CDN файла */
-                $imgEntity->updCdn('webp');
-                $this->entityManager->flush();
-                return true;
-            }
-
             throw new RecoverableMessageHandlingException(sprintf('File Not found: %s', $uploadFile));
         }
 
         /* Указываем путь и название файла для загрузки CDN */
         $formFields = [
-            'dir' => $imgEntity::TABLE.'/'.$command->getDir(),
-            'image' => DataPart::fromPath($uploadFile),
+            'dir' => $command->getDir(),
+            'file' => DataPart::fromPath($uploadFile),
         ];
+
 
         /* Формируем заголовки файла и авторизации CDN */
         $formData = new FormDataPart($formFields);
@@ -121,10 +104,9 @@ final class CDNUploadImage
         $headers[] = 'Authorization: Basic '.base64_encode($this->CDN_USER.':'.$this->CDN_PASS);
 
 
-        /* Отправляем запрос на загрузку файла серверу CDN */
         $request = $this->httpClient->request(
             'POST',
-            'https://'.$this->CDN_HOST.self::PATH_IMAGE_CDN,
+            'https://'.$this->CDN_HOST.self::PATH_FILE_CDN,
             [
                 'headers' => $headers,
                 'body' => $formData->bodyToString(),
@@ -135,9 +117,8 @@ final class CDNUploadImage
             throw new RecoverableMessageHandlingException(sprintf('Error upload file CDN (%s)', $request->getContent()));
         }
 
-
         /* Обновляем сущность на CDN файла */
-        $imgEntity->updCdn('webp');
+        $imgEntity->updCdn();
         $this->entityManager->flush();
 
         /* Удаляем оригинал если файл загружен на CDN */
@@ -158,6 +139,5 @@ final class CDNUploadImage
             return null;
         return (count(scandir($dir)) === 2);
     }
-
 }
 

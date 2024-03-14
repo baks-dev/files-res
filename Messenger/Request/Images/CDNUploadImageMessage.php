@@ -16,32 +16,32 @@
  *
  */
 
-namespace BaksDev\Files\Resources\Messanger\Request\File;
+namespace BaksDev\Files\Resources\Messenger\Request\Images;
 
-final class CDNUploadFileMessage
+final class CDNUploadImageMessage
 {
-    /**
-     * Идентификатор сущности для обновления CDN (UID)
-     */
-    private readonly object $id;
-
-    /**
-     * Директория загрузки файла
-     */
+	/**
+	 * Идентификатор сущности для обновления CDN (UID)
+	 */
+	private readonly object $id;
+	
+	/**
+	 * Директория загрузки файла
+	 */
     private readonly string $dir;
-
-    /**
-     * Класс сущности
-     */
+	
+	/**
+	 * Класс сущности
+	 */
     private readonly string $entity;
 
 
-    public function __construct(object $id, string $entity, string $dir)
-    {
-        $this->id = $id;
-        $this->dir = $dir;
-        $this->entity = $entity;
-    }
+	public function __construct(object $id, string $entity, string $dir)
+	{
+		$this->id = $id;
+		$this->dir = $dir;
+		$this->entity = $entity;
+	}
 
     /**
      * Id

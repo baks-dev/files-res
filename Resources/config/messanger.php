@@ -18,7 +18,7 @@
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
-use BaksDev\Files\Resources\Messanger\Request;
+use BaksDev\Files\Resources\Messenger\Request;
 use Symfony\Config\FrameworkConfig;
 
 return static function (FrameworkConfig $framework) {
