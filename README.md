@@ -18,7 +18,8 @@ $ composer require baks-dev/files-res
 
 ``` bash
 $ sudo mkdir <path_to_project>/public/upload
-$ sudo sudo chmod 773 <path_to_project>/public/upload
+$ chown -R unit:unit <path_to_project>/public/upload
+
 ``` 
 
 ***

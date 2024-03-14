@@ -97,7 +97,7 @@ final class ImageUpload implements ImageUploadInterface
             /* Отправляем событие в шину  */
             $this->messageDispatch->dispatch(
                 message: new CDNUploadImageMessage($entity->getId(), get_class($entity), $name),
-                transport: 'resources'
+                transport: 'files-res'
             );
 
         }

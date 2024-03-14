@@ -109,7 +109,7 @@ final class FileUpload implements FileUploadInterface
             /* Отправляем событие в шину  */
             $this->messageDispatch->dispatch(
                 message: new CDNUploadFileMessage($entity->getId(), get_class($entity), $name),
-                transport: 'resources'
+                transport: 'files-res'
             );
 
         }

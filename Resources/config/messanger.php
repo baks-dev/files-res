@@ -26,7 +26,7 @@ return static function (FrameworkConfig $framework) {
     $messenger = $framework->messenger();
 
     $messenger
-        ->transport('resources')
+        ->transport('files-res')
         ->dsn('%env(MESSENGER_TRANSPORT_DSN)%')
         ->options(['queue_name' => 'files-res'])
         ->failureTransport('failed-files-res')

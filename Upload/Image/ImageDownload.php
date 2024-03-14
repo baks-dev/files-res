@@ -127,7 +127,7 @@ final class ImageDownload
             /* Отправляем событие в шину  */
             $this->messageDispatch->dispatch(
                 message: new CDNUploadImageMessage($entity->getId(), get_class($entity), $newFilename, $dirId),
-                transport: 'resources'
+                transport: 'files-res'
             );
         }
     }
