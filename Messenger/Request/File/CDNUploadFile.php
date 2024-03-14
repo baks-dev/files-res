@@ -103,7 +103,6 @@ final class CDNUploadFile
         $headers = $formData->getPreparedHeaders()->toArray();
         $headers[] = 'Authorization: Basic '.base64_encode($this->CDN_USER.':'.$this->CDN_PASS);
 
-
         $request = $this->httpClient->request(
             'POST',
             'https://'.$this->CDN_HOST.self::PATH_FILE_CDN,

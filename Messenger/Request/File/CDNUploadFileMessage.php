@@ -66,6 +66,5 @@ final class CDNUploadFileMessage
     {
         return $this->entity;
     }
-
 }
 

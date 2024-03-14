@@ -51,7 +51,6 @@ final class CDNUploadImage
     private string $CDN_USER;
     private string $CDN_PASS;
 
-
     public function __construct(
         #[Autowire('%kernel.project_dir%/public/upload/')] string $upload,
         #[Autowire(env: 'CDN_HOST')] string $CDN_HOST,
