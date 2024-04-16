@@ -102,6 +102,7 @@ class CDNUploadImageTestCommand extends Command
                 'body' => $formData->bodyToString(),
             ]);
 
+
         if($request->getStatusCode() !== 200)
         {
             throw new RecoverableMessageHandlingException(sprintf('Error upload file CDN (%s)', $request->getContent()));
