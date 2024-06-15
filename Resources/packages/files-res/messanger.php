@@ -28,8 +28,8 @@ return static function (FrameworkConfig $framework) {
 
     $messenger
         ->transport('files-res')
-        ->dsn('%env(MESSENGER_TRANSPORT_DSN)%')
-        ->options(['queue_name' => 'files-res'])
+        ->dsn('redis://%env(REDIS_PASSWORD)%@%env(REDIS_HOST)%:%env(REDIS_PORT)%?auto_setup=true')
+        ->options(['stream' => 'files-res'])
         ->failureTransport('failed-files-res')
         ->retryStrategy()
         ->maxRetries(3)
