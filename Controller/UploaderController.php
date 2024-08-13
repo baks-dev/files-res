@@ -46,7 +46,10 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 #[RoleSecurity('ROLE_USER')]
 final class UploaderController // extends AbstractController
 {
-    #[Route('/file/upload', name: 'file.uploader', methods: [
+    /**
+     * Контроллер загрузки файлов изображений
+     */
+    #[Route('/file/upload/image', name: 'file.uploader', methods: [
         'GET',
         'POST',
     ])]
@@ -56,8 +59,7 @@ final class UploaderController // extends AbstractController
         #[Autowire(env: 'CDN_PASS')] string $CDN_PASS,
         Request $request,
         HttpClientInterface $httpClient
-    ): Response
-    {
+    ): Response {
 
         /** @var UploadedFile $uploadFile */
         $uploadFile = $request->files->get('file');
@@ -78,11 +80,12 @@ final class UploaderController // extends AbstractController
         /* Отправляем запрос на загрузку файла серверу CDN */
         $response = $httpClient->request(
             'POST',
-            'https://'.$CDN_HOST.'/cdn/upload',
+            'https://'.$CDN_HOST.'/cdn/upload/image',
             [
                 'headers' => $headers,
                 'body' => $formData->bodyToString(),
-            ]);
+            ]
+        );
 
         if($response->getStatusCode() !== 200)
         {
