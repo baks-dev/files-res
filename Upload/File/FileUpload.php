@@ -115,7 +115,7 @@ final class FileUpload implements FileUploadInterface
         }
         catch(FileException $e)
         {
-            $this->logger->error($e->getMessage(), [__FILE__.':'.__LINE__]);
+            $this->logger->error($e->getMessage(), [self::class.':'.__LINE__]);
         }
     }
 
