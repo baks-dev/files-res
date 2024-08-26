@@ -20,6 +20,9 @@ namespace BaksDev\Files\Resources\Messenger\Request\File;
 
 use BaksDev\Files\Resources\Upload\UploadEntityInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Mapping\Table;
+use ReflectionAttribute;
+use ReflectionClass;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\Exception\RecoverableMessageHandlingException;
@@ -28,52 +31,26 @@ use Symfony\Component\Mime\Part\Multipart\FormDataPart;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 #[AsMessageHandler]
-final class CDNUploadFile
+final readonly class CDNUploadFile
 {
     /**
      * Конечная точка CDN для загрузки файла
      */
     public const PATH_FILE_CDN = '/cdn/upload/file';
 
-    private EntityManagerInterface $entityManager;
-
-    private HttpClientInterface $httpClient;
-
-    /**
-     * Абсолютный путь директории загрузки
-     */
-    private string $upload;
-
-    /**
-     * Данные для подключения к серверу CDN
-     */
-    private string $CDN_HOST;
-    private string $CDN_USER;
-    private string $CDN_PASS;
-
-
     public function __construct(
-        #[Autowire('%kernel.project_dir%/public/upload/')] string $upload,
-        #[Autowire(env: 'CDN_HOST')] string $CDN_HOST,
-        #[Autowire(env: 'CDN_USER')] string $CDN_USER,
-        #[Autowire(env: 'CDN_PASS')] string $CDN_PASS,
-        EntityManagerInterface $entityManager,
-        HttpClientInterface $httpClient,
-    )
-    {
-        $this->entityManager = $entityManager;
-        $this->httpClient = $httpClient;
-
-        $this->upload = $upload;
-        $this->CDN_HOST = $CDN_HOST;
-        $this->CDN_USER = $CDN_USER;
-        $this->CDN_PASS = $CDN_PASS;
-    }
+        #[Autowire('%kernel.project_dir%')] private string $upload,
+        #[Autowire(env: 'CDN_HOST')] private string $CDN_HOST,
+        #[Autowire(env: 'CDN_USER')] private string $CDN_USER,
+        #[Autowire(env: 'CDN_PASS')] private string $CDN_PASS,
+        private EntityManagerInterface $entityManager,
+        private HttpClientInterface $httpClient,
+    ) {}
 
     public function __invoke(CDNUploadFileMessage $command): bool|string
     {
         $this->entityManager->clear();
-        
+
         /* @var UploadEntityInterface $imgEntity */
         $imgEntity = $this->entityManager->getRepository($command->getEntity())->find($command->getId());
 
@@ -82,9 +59,17 @@ final class CDNUploadFile
             throw new RecoverableMessageHandlingException('Error get Entity ID:'.$command->getId());
         }
 
-        /* Абсолютный путь к файлу изображения */
-        $uploadDir = $this->upload.$imgEntity::TABLE.'/'.$command->getDir();
-        $uploadFile = $uploadDir.'/file.'.$imgEntity->getExt();
+
+        $ref = new ReflectionClass($imgEntity);
+        /** @var ReflectionAttribute $current */
+        $current = current($ref->getAttributes(Table::class));
+        $TABLE = $current->getArguments()['name'] ?? 'images';
+
+
+        /* Абсолютный путь к директории файлу изображения */
+        $uploadDir = implode(DIRECTORY_SEPARATOR, [$this->upload, 'public', 'upload', $TABLE, $command->getDir()]);
+        $uploadFile = $uploadDir.DIRECTORY_SEPARATOR.'file.'.$imgEntity->getExt();
+
 
         if(!file_exists($uploadFile))
         {
@@ -109,7 +94,8 @@ final class CDNUploadFile
             [
                 'headers' => $headers,
                 'body' => $formData->bodyToString(),
-            ]);
+            ]
+        );
 
         if($request->getStatusCode() !== 200)
         {
@@ -135,8 +121,9 @@ final class CDNUploadFile
     private function is_dir_empty($dir)
     {
         if(!is_readable($dir))
+        {
             return null;
+        }
         return (count(scandir($dir)) === 2);
     }
 }
-

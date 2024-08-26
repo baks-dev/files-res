@@ -20,6 +20,10 @@ namespace BaksDev\Files\Resources\Messenger\Request\Images;
 
 use BaksDev\Files\Resources\Upload\UploadEntityInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Mapping\Table;
+use InvalidArgumentException;
+use ReflectionAttribute;
+use ReflectionClass;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\Exception\RecoverableMessageHandlingException;
@@ -28,46 +32,21 @@ use Symfony\Component\Mime\Part\Multipart\FormDataPart;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 #[AsMessageHandler]
-final class CDNUploadImage
+final readonly class CDNUploadImage
 {
     /**
      * Конечная точка CDN для загрузки изображений
      */
     public const PATH_IMAGE_CDN = '/cdn/upload/image';
 
-    private EntityManagerInterface $entityManager;
-
-    private HttpClientInterface $httpClient;
-
-    /**
-     * Абсолютный путь директории загрузки
-     */
-    private string $upload;
-
-    /**
-     * Данные для подключения к серверу CDN
-     */
-    private string $CDN_HOST;
-    private string $CDN_USER;
-    private string $CDN_PASS;
-
     public function __construct(
-        #[Autowire('%kernel.project_dir%/public/upload/')] string $upload,
-        #[Autowire(env: 'CDN_HOST')] string $CDN_HOST,
-        #[Autowire(env: 'CDN_USER')] string $CDN_USER,
-        #[Autowire(env: 'CDN_PASS')] string $CDN_PASS,
-        EntityManagerInterface $entityManager,
-        HttpClientInterface $httpClient,
-    )
-    {
-        $this->entityManager = $entityManager;
-        $this->httpClient = $httpClient;
-        $this->upload = $upload;
-
-        $this->CDN_HOST = $CDN_HOST;
-        $this->CDN_USER = $CDN_USER;
-        $this->CDN_PASS = $CDN_PASS;
-    }
+        #[Autowire('%kernel.project_dir%')] private string $upload,
+        #[Autowire(env: 'CDN_HOST')] private string $CDN_HOST,
+        #[Autowire(env: 'CDN_USER')] private string $CDN_USER,
+        #[Autowire(env: 'CDN_PASS')] private string $CDN_PASS,
+        private EntityManagerInterface $entityManager,
+        private HttpClientInterface $httpClient,
+    ) {}
 
 
     public function __invoke(CDNUploadImageMessage $command): bool|string
@@ -85,16 +64,28 @@ final class CDNUploadImage
             return false;
         }
 
-        /* Абсолютный путь к файлу изображения */
-        $uploadDir = $this->upload.$imgEntity::TABLE.'/'.$command->getDir();
-        $uploadFile = $uploadDir.'/image.'.$imgEntity->getExt();
+        if(!class_exists($imgEntity))
+        {
+            throw new InvalidArgumentException('Невозможно получить класс сущности');
+        }
+
+        /** Выделяем из сущности название таблицы для деректории загрузки файла */
+        $ref = new ReflectionClass($imgEntity);
+        /** @var ReflectionAttribute $current */
+        $current = current($ref->getAttributes(Table::class));
+        $TABLE = $current->getArguments()['name'] ?? 'images';
+
+
+        /* Абсолютный путь к директории и файлу изображения */
+        $uploadDir = implode(DIRECTORY_SEPARATOR, [$this->upload, 'public', 'upload', $TABLE, $command->getDir()]);
+        $uploadFile = $uploadDir.DIRECTORY_SEPARATOR.'image.'.$imgEntity->getExt();
 
         if(!file_exists($uploadFile))
         {
             /** Если файла не существует - проверяем что он имеется на CDN */
             $request = $this->httpClient->request(
                 'GET',
-                'https://'.$this->CDN_HOST.'/upload/'.$imgEntity::TABLE.'/'.$command->getDir().'/min.webp'
+                'https://'.$this->CDN_HOST.'/upload/'.$TABLE.'/'.$command->getDir().'/min.webp'
             );
 
             if($request->getStatusCode() === 200)
@@ -110,7 +101,7 @@ final class CDNUploadImage
 
         /* Указываем путь и название файла для загрузки CDN */
         $formFields = [
-            'dir' => $imgEntity::TABLE.'/'.$command->getDir(),
+            'dir' => $TABLE.'/'.$command->getDir(),
             'image' => DataPart::fromPath($uploadFile),
         ];
 
@@ -127,7 +118,8 @@ final class CDNUploadImage
             [
                 'headers' => $headers,
                 'body' => $formData->bodyToString(),
-            ]);
+            ]
+        );
 
         if($request->getStatusCode() !== 200)
         {
@@ -154,9 +146,10 @@ final class CDNUploadImage
     private function is_dir_empty($dir)
     {
         if(!is_readable($dir))
+        {
             return null;
+        }
         return (count(scandir($dir)) === 2);
     }
 
 }
-

@@ -22,9 +22,12 @@ use BaksDev\Core\Messenger\MessageDispatchInterface;
 use BaksDev\Files\Resources\Messenger\Request\Images\CDNUploadImageMessage;
 use BaksDev\Files\Resources\Upload\UploadEntityInterface;
 use BaksDev\Telegram\Bot\Messenger\Notifier\NotifierTelegramBotMessage;
+use Doctrine\ORM\Mapping\Table;
 use Exception;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
+use ReflectionAttribute;
+use ReflectionClass;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
@@ -33,29 +36,17 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-final class ImageUpload implements ImageUploadInterface
+final readonly class ImageUpload implements ImageUploadInterface
 {
-
     private LoggerInterface $logger;
 
-    private Filesystem $filesystem;
-
-    private MessageDispatchInterface $messageDispatch;
-
-    private string $upload;
-
-
     public function __construct(
-        #[Autowire('%kernel.project_dir%/public/upload/')] string $upload,
-        LoggerInterface $logger,
-        Filesystem $filesystem,
-        MessageDispatchInterface $messageDispatch
-    )
-    {
-        $this->logger = $logger;
-        $this->filesystem = $filesystem;
-        $this->messageDispatch = $messageDispatch;
-        $this->upload = $upload;
+        #[Autowire('%kernel.project_dir%')] private string $upload,
+        private Filesystem $filesystem,
+        private MessageDispatchInterface $messageDispatch,
+        LoggerInterface $filesResLogger,
+    ) {
+        $this->logger = $filesResLogger;
     }
 
 
@@ -68,10 +59,14 @@ final class ImageUpload implements ImageUploadInterface
             throw new InvalidArgumentException(sprintf('Not found image in class %s', get_class($entity)));
         }
 
-        /* Определяем директорию загрузки файла по названию таблицы */
-        $uploadDir = $this->upload.$entity::TABLE.'/'.$name;
+        $ref = new ReflectionClass($entity);
+        /** @var ReflectionAttribute $current */
+        $current = current($ref->getAttributes(Table::class));
+        $TABLE = $current->getArguments()['name'] ?? 'images';
 
-        /* Создаем директорию Для загрузки */
+
+        /* Создаем директорию Для загрузки файла */
+        $uploadDir = implode(DIRECTORY_SEPARATOR, [$this->upload, 'public', 'upload', $TABLE, $name]);
         $this->filesystem->mkdir($uploadDir);
 
         /* Перемещаем файл в директорию */
@@ -80,7 +75,7 @@ final class ImageUpload implements ImageUploadInterface
             /* Генерируем новое название файла с расширением */
             $newFilename = 'image.'.$file->guessExtension();
 
-            if(!file_exists($uploadDir.'/'.$newFilename))
+            if(!file_exists($uploadDir.DIRECTORY_SEPARATOR.$newFilename))
             {
                 /* Перемещаем файл */
                 $file = $file->move(
@@ -89,10 +84,11 @@ final class ImageUpload implements ImageUploadInterface
                 );
             }
 
-            $extension = pathinfo($uploadDir.'/'.$newFilename, PATHINFO_EXTENSION);
-            $size = filesize($uploadDir.'/'.$newFilename);
-            $entity->updFile($name, $extension, $size);
+            $newFilePath = $uploadDir.DIRECTORY_SEPARATOR.$newFilename;
 
+            $extension = pathinfo($newFilePath, PATHINFO_EXTENSION);
+            $size = filesize($newFilePath);
+            $entity->updFile($name, $extension, $size);
 
             /* Отправляем событие в шину  */
             $this->messageDispatch->dispatch(

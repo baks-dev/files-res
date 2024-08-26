@@ -20,45 +20,36 @@ namespace BaksDev\Files\Resources\Upload\Image;
 use BaksDev\Core\Messenger\MessageDispatchInterface;
 use BaksDev\Files\Resources\Messenger\Request\Images\CDNUploadImageMessage;
 use BaksDev\Files\Resources\Upload\UploadEntityInterface;
+use Doctrine\ORM\Mapping\Table;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
+use ReflectionAttribute;
+use ReflectionClass;
 use RuntimeException;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-final class ImageDownload
+final readonly class ImageDownload
 {
-    private HttpClientInterface $client;
-
-    private Filesystem $filesystem;
-
-    private TranslatorInterface $translator;
-
     private LoggerInterface $logger;
 
-    private MessageDispatchInterface $messageDispatch;
-    private string $upload;
-
     public function __construct(
-        #[Autowire('%kernel.project_dir%/public/upload/')] string $upload,
-        HttpClientInterface $client,
-        Filesystem $filesystem,
-        TranslatorInterface $translator,
-        LoggerInterface $logger,
-        MessageDispatchInterface $messageDispatch
+        #[Autowire('%kernel.project_dir%')] private string $upload,
+        private HttpClientInterface $client,
+        private Filesystem $filesystem,
+        private MessageDispatchInterface $messageDispatch,
+        LoggerInterface $filesResLogger,
     ) {
-        $this->client = $client;
-        $this->filesystem = $filesystem;
-        $this->translator = $translator;
-        $this->logger = $logger;
-        $this->messageDispatch = $messageDispatch;
-        $this->upload = $upload;
+        $this->logger = $filesResLogger;
     }
 
     public function get(string $url, UploadEntityInterface $entity): void
     {
+
+        $upload = implode(DIRECTORY_SEPARATOR, [$this->upload, 'public', 'upload']);
+
         $parse_url = parse_url($url);
         $originalFilename = pathinfo($parse_url['path']);
         $name = md5($url);
@@ -66,42 +57,40 @@ final class ImageDownload
 
         $dirId = $entity->getUploadDir();
 
-        if (empty($dirId))
+        if(empty($dirId))
         {
             throw new InvalidArgumentException(sprintf('Not found ID in class %s', get_class($entity)));
         }
 
-        /* Определяем директорию загрузки файла по названию таблицы */
-        $uploadDir = $this->upload.$entity::TABLE.'/'.$dirId;
+        /** Определяем название директор из таблицы */
+        $ref = new ReflectionClass($entity);
+        /** @var ReflectionAttribute $current */
+        $current = current($ref->getAttributes(Table::class));
+        $TABLE = $current->getArguments()['name'] ?? 'images';
+
+        /** Абсолютный путь директории загрузки файла по названию таблицы и дайджеста */
+        $uploadDir = implode(DIRECTORY_SEPARATOR, [$upload, $TABLE, $dirId]);
+
+        /** Абсолютный путь к файлу с названием */
+        $path = implode(DIRECTORY_SEPARATOR, [$uploadDir, $newFilename]);
 
         /* Создаем директорию Для загрузки */
         $this->filesystem->mkdir($uploadDir);
 
-        /* Полный путь к файлу с названием */
-        $path = $uploadDir.'/'.$newFilename;
-
         /* Если файла не существует - скачиваем */
-        if (!file_exists($path))
+        if(!file_exists($path))
         {
             /* Создаем директорию для загрузки */
-            if (!file_exists($uploadDir) && !mkdir($uploadDir) && !is_dir($uploadDir))
+            if(!file_exists($uploadDir) && !mkdir($uploadDir) && !is_dir($uploadDir))
             {
                 throw new RuntimeException(sprintf('Directory "%s" was not created', $uploadDir));
             }
 
             $response = $this->client->request('GET', $url);
 
-            if ($response->getStatusCode() !== 200)
+            if($response->getStatusCode() !== 200)
             {
-                $error = sprintf(
-                    '%s : %s',
-                    $url,
-                    $this->translator->trans(
-                        'error.upload.file',
-                        domain: 'files.res'
-                    )
-                );
-
+                $error = sprintf('%s: Ошибка при загрузке файла', $url);
                 $this->logger->error($error);
 
                 return;
@@ -109,7 +98,7 @@ final class ImageDownload
 
             // получить содержимое ответа и сохранить их в файл
             $fileHandler = fopen($path, 'wb');
-            foreach ($this->client->stream($response) as $chunk)
+            foreach($this->client->stream($response) as $chunk)
             {
                 fwrite($fileHandler, $chunk->getContent());
             }
