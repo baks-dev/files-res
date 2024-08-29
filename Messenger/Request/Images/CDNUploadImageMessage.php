@@ -18,22 +18,22 @@
 
 namespace BaksDev\Files\Resources\Messenger\Request\Images;
 
-final class CDNUploadImageMessage
+final readonly class CDNUploadImageMessage
 {
     /**
      * Идентификатор сущности для обновления CDN (UID)
      */
-    private readonly object $id;
+    private object $id;
 
     /**
      * Директория загрузки файла
      */
-    private readonly string $dir;
+    private string $dir;
 
     /**
      * Класс сущности
      */
-    private readonly string $entity;
+    private string $entity;
 
 
     public function __construct(object $id, string $entity, string $dir)

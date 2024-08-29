@@ -53,6 +53,11 @@ final readonly class CDNUploadImage
     {
         $this->entityManager->clear();
 
+        if(!class_exists($command->getEntity()))
+        {
+            throw new InvalidArgumentException(sprintf('Невозможно получить класс сущности %s', $command->getEntity()));
+        }
+
         /* @var UploadEntityInterface $imgEntity */
         $imgEntity = $this->entityManager->getRepository($command->getEntity())->find($command->getId());
 
@@ -62,11 +67,6 @@ final readonly class CDNUploadImage
         if($imgEntity === null)
         {
             return false;
-        }
-
-        if(!class_exists($imgEntity))
-        {
-            throw new InvalidArgumentException('Невозможно получить класс сущности');
         }
 
         /** Выделяем из сущности название таблицы для деректории загрузки файла */
