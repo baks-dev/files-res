@@ -18,6 +18,7 @@
 
 namespace BaksDev\Files\Resources\Messenger\Request\Images;
 
+use App\Kernel;
 use BaksDev\Files\Resources\Upload\UploadEntityInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\Table;
@@ -51,6 +52,12 @@ final readonly class CDNUploadImage
 
     public function __invoke(CDNUploadImageMessage $command): bool|string
     {
+        if(Kernel::isTestEnvironment())
+        {
+            return false;
+        }
+
+
         $this->entityManager->clear();
 
         if(!class_exists($command->getEntity()))
