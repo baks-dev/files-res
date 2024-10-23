@@ -1,6 +1,6 @@
 # BaksDev Files Resources
 
-[![Version](https://img.shields.io/badge/version-7.1.8-blue)](https://github.com/baks-dev/files-res/releases)
+[![Version](https://img.shields.io/badge/version-7.1.9-blue)](https://github.com/baks-dev/files-res/releases)
 ![php 8.3+](https://img.shields.io/badge/php-min%208.3-red.svg)
 
 Модуль файловых ресурсов
@@ -13,7 +13,6 @@ $ composer require baks-dev/files-res
 
 ## Настройки
 
-
 Добавить директорию и установить права для загрузки обложек категорий:
 
 ``` bash
@@ -24,14 +23,15 @@ $ chown -R unit:unit <path_to_project>/public/upload
 
 ***
 
-Для пережатия и конвертации файлов изображений в формат .webp устанавливаем на отдельный хост CDN-сервер (РЕКОМЕНДУЦИЯ! на отдельный домен!!!)
-
+Для пережатия и конвертации файлов изображений в формат .webp устанавливаем на отдельный хост CDN-сервер (РЕКОМЕНДУЦИЯ!
+на отдельный домен!!!)
 
 ``` bash
 $ composer create-project symfony/skeleton <project_name>
 ```
 
-Переходим в папку проекта CDN cервера, устанавливаем и настраиваем пакет ["Модуль CDN файловых ресурсов"](https://github.com/baks-dev/files-cdn)
+Переходим в папку проекта CDN cервера, устанавливаем и настраиваем
+пакет ["Модуль CDN файловых ресурсов"](https://github.com/baks-dev/files-cdn)
 
 ***
 
