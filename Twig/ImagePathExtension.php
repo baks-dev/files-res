@@ -21,32 +21,42 @@
  *  THE SOFTWARE.
  */
 
-declare(strict_types=1);
+namespace BaksDev\Files\Resources\Twig;
 
-namespace BaksDev\Files\Resources;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Twig\Extension\AbstractExtension;
+use Twig\TwigFunction;
 
-use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 
-class BaksDevFilesResourcesBundle extends AbstractBundle
+class ImagePathExtension extends AbstractExtension
 {
+    public function __construct(
+        #[Autowire(env: 'CDN_HOST')] private readonly string $cdnHost,
+    ) {}
 
-    public const string NAMESPACE = __NAMESPACE__.'\\';
+    public function getFunctions()
+    {
+        return [
+            new TwigFunction('cdn_image_path', [$this, 'imagePath'], ['is_safe' => ['html']]),
+        ];
+    }
 
-    public const string PATH = __DIR__.DIRECTORY_SEPARATOR;
+    public function imagePath(
+        ?string $img_name,
+        ?string $img_ext,
+        bool $img_cdn = false
+    ): string
+    {
+        if($img_name === null || $img_ext === null)
+        {
+            return '/assets/img/blank.svg';
+        }
 
-    //    public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
-    //    {
-    //        $services = $container->services()
-    //            ->defaults()
-    //            ->autowire()
-    //            ->autoconfigure();
-    //
-    //        $services->load(self::NAMESPACE, self::PATH)
-    //            ->exclude([
-    //                self::PATH.'{Entity,Resources,Type}',
-    //                self::PATH.'**/*Message.php',
-    //                self::PATH.'**/*DTO.php',
-    //            ]);
-    //    }
+        $img_host = $img_cdn ? 'https://'.$this->cdnHost : '';
+
+        $img_file = (empty($img_host) ? '/image.' : '/small.').$img_ext;
+
+        return sprintf('%s%s%s', $img_host, $img_name, $img_file);
+    }
 
 }
