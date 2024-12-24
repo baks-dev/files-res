@@ -1,6 +1,6 @@
 # BaksDev Files Resources
 
-[![Version](https://img.shields.io/badge/version-7.1.11-blue)](https://github.com/baks-dev/files-res/releases)
+[![Version](https://img.shields.io/badge/version-7.1.12-blue)](https://github.com/baks-dev/files-res/releases)
 ![php 8.3+](https://img.shields.io/badge/php-min%208.3-red.svg)
 
 Модуль файловых ресурсов
@@ -44,3 +44,4 @@ $ php bin/console messenger:consume async_files_resources --time-limit=3600
 ## Лицензия ![License](https://img.shields.io/badge/MIT-green)
 
 The MIT License (MIT). Обратитесь к [Файлу лицензии](LICENSE.md) за дополнительной информацией.
+
