@@ -28,7 +28,7 @@ use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
 
-class ImagePathExtension extends AbstractExtension
+final class ImagePathExtension extends AbstractExtension
 {
     public function __construct(
         #[Autowire(env: 'CDN_HOST')] private readonly string $cdnHost,
