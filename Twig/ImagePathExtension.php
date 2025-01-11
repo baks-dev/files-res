@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2024.  Baks.dev <admin@baks.dev>
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -42,21 +42,20 @@ final class ImagePathExtension extends AbstractExtension
     }
 
     public function imagePath(
-        ?string $img_name,
-        ?string $img_ext,
-        bool $img_cdn = false
+        ?string $name,
+        ?string $ext,
+        ?bool $cdn = false
     ): string
     {
-        if($img_name === null || $img_ext === null)
+        if($name === null || $ext === null)
         {
             return '/assets/img/blank.svg';
         }
 
-        $img_host = $img_cdn ? 'https://'.$this->cdnHost : '';
+        $img_host = $cdn ? 'https://'.$this->cdnHost : '';
+        $img_file = (empty($img_host) ? '/image.' : '/small.').$ext;
 
-        $img_file = (empty($img_host) ? '/image.' : '/small.').$img_ext;
-
-        return sprintf('%s%s%s', $img_host, $img_name, $img_file);
+        return sprintf('%s%s%s', $img_host, $name, $img_file);
     }
 
 }
