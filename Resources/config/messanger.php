@@ -33,7 +33,7 @@ return static function(FrameworkConfig $framework) {
 
     $messenger
         ->transport('files-res')
-        ->dsn('redis://%env(REDIS_PASSWORD)%@%env(REDIS_HOST)%:%env(REDIS_PORT)%?auto_setup=true')
+        ->dsn('redis://%env(REDIS_PASSWORD)%@%env(REDIS_HOST)%:%env(REDIS_PORT)%?dbindex=%env(REDIS_TABLE)&auto_setup=true')
         ->options(['stream' => 'files-res'])
         ->failureTransport('failed-files-res')
         ->retryStrategy()
