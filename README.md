@@ -1,6 +1,6 @@
 # BaksDev Files Resources
 
-[![Version](https://img.shields.io/badge/version-7.1.17-blue)](https://github.com/baks-dev/files-res/releases)
+[![Version](https://img.shields.io/badge/version-7.1.18-blue)](https://github.com/baks-dev/files-res/releases)
 ![php 8.3+](https://img.shields.io/badge/php-min%208.3-red.svg)
 
 Модуль файловых ресурсов
