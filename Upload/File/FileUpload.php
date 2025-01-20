@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2024.  Baks.dev <admin@baks.dev>
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +32,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionAttribute;
 use ReflectionClass;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\HttpFoundation\File\File;
@@ -39,17 +40,12 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 final readonly class FileUpload implements FileUploadInterface
 {
-    private LoggerInterface $logger;
-
     public function __construct(
         #[Autowire('%kernel.project_dir%')] private string $upload,
+        #[Target('filesResLogger')] private LoggerInterface $logger,
         private Filesystem $filesystem,
         private MessageDispatchInterface $messageDispatch,
-        LoggerInterface $filesResLogger,
-    )
-    {
-        $this->logger = $filesResLogger;
-    }
+    ) {}
 
 
     public function upload(File|UploadedFile $file, UploadEntityInterface $entity): void

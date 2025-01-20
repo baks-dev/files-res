@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2023-2024.  Baks.dev <admin@baks.dev>
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -33,23 +33,20 @@ use ReflectionAttribute;
 use ReflectionClass;
 use RuntimeException;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final readonly class ImageDownload
 {
-    private LoggerInterface $logger;
 
     public function __construct(
         #[Autowire('%kernel.project_dir%')] private string $upload,
+        #[Target('filesResLogger')] private LoggerInterface $logger,
         private HttpClientInterface $client,
         private Filesystem $filesystem,
         private MessageDispatchInterface $messageDispatch,
-        LoggerInterface $filesResLogger,
-    )
-    {
-        $this->logger = $filesResLogger;
-    }
+    ) {}
 
     public function get(string $url, UploadEntityInterface $entity): void
     {
