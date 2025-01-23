@@ -23,6 +23,7 @@
 
 namespace BaksDev\Files\Resources\Twig;
 
+use InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
@@ -44,7 +45,8 @@ final class ImagePathExtension extends AbstractExtension
     public function imagePath(
         ?string $name,
         ?string $ext,
-        ?bool $cdn = false
+        ?bool $cdn = false,
+        ?string $size = 'small'
     ): string
     {
         if($name === null || $ext === null)
@@ -52,8 +54,24 @@ final class ImagePathExtension extends AbstractExtension
             return '/assets/img/blank.svg';
         }
 
+        if(false === $cdn)
+        {
+            $size = 'image';
+        }
+
+        if(true === $cdn)
+        {
+            $ext = 'webp';
+        }
+
+        if(false === in_array($size, ['image', 'original', 'large', 'medium', 'small', 'min'], true))
+        {
+            throw new InvalidArgumentException(sprintf('Invalid Argument size %s', $size));
+        }
+
+
         $img_host = $cdn ? 'https://'.$this->cdnHost : '';
-        $img_file = (empty($img_host) ? '/image.' : '/small.').$ext;
+        $img_file = sprintf('/%s.%s', $size, $ext); //  (empty($img_host); //   ? '/image.' : '/small.').$ext;
 
         return sprintf('%s%s%s', $img_host, $name, $img_file);
     }
