@@ -35,7 +35,7 @@ final class ImagePathExtension extends AbstractExtension
         #[Autowire(env: 'CDN_HOST')] private readonly string $cdnHost,
     ) {}
 
-    public function getFunctions()
+    public function getFunctions(): array
     {
         return [
             new TwigFunction('cdn_image_path', [$this, 'imagePath'], ['is_safe' => ['html']]),
