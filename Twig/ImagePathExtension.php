@@ -23,8 +23,11 @@
 
 namespace BaksDev\Files\Resources\Twig;
 
+use BaksDev\Core\Cache\AppCacheInterface;
+use DateInterval;
 use InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Contracts\Cache\ItemInterface;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
@@ -33,6 +36,7 @@ final class ImagePathExtension extends AbstractExtension
 {
     public function __construct(
         #[Autowire(env: 'CDN_HOST')] private readonly string $cdnHost,
+        private readonly AppCacheInterface $cache
     ) {}
 
     public function getFunctions(): array
@@ -46,7 +50,8 @@ final class ImagePathExtension extends AbstractExtension
         ?string $name,
         ?string $ext,
         ?bool $cdn = false,
-        ?string $size = 'small'
+        ?string $size = 'small',
+        bool $cached = false
     ): string
     {
         if($name === null || $ext === null)
@@ -69,11 +74,25 @@ final class ImagePathExtension extends AbstractExtension
             throw new InvalidArgumentException(sprintf('Invalid Argument size %s', $size));
         }
 
-
         $img_host = $cdn ? 'https://'.$this->cdnHost : '';
         $img_file = sprintf('/%s.%s', $size, $ext); //  (empty($img_host); //   ? '/image.' : '/small.').$ext;
 
-        return sprintf('%s%s%s', $img_host, $name, $img_file);
+        $path = sprintf('%s%s%s', $img_host, $name, $img_file);
+
+        if($cached && $cdn)
+        {
+            $cache = $this->cache->init('files-res');
+            $key = md5($name.$img_file);
+
+            return $cache->get($key, function(ItemInterface $item) use ($path, $ext): string {
+                $item->expiresAfter(DateInterval::createFromDateString('1 hour'));
+                $image = file_get_contents($path);
+                return sprintf('data:image/%s;base64,%s', $ext, base64_encode($image));
+            });
+        }
+
+        return $path;
     }
+
 
 }
