@@ -75,15 +75,13 @@ final class ImagePathExtension extends AbstractExtension
         }
 
         $img_host = $cdn ? 'https://'.$this->cdnHost : '';
-        $img_file = sprintf('/%s.%s', $size, $ext); //  (empty($img_host); //   ? '/image.' : '/small.').$ext;
+        $path = sprintf('%s%s/%s.%s', $img_host, $name, $size, $ext);
 
-        $path = sprintf('%s%s%s', $img_host, $name, $img_file);
-
-        /** Кешируем изображение на 1 час для отдачи как ресурс  */
+        /** Кешируем изображение CDN на 1 час для отдачи как ресурс  */
         if($cached && $cdn)
         {
             $cache = $this->cache->init('files-res');
-            $key = md5($name.$img_file);
+            $key = md5($name.$size.$ext);
 
             return $cache->get($key, function(ItemInterface $item) use ($path, $ext): string {
                 $item->expiresAfter(DateInterval::createFromDateString('1 hour'));
