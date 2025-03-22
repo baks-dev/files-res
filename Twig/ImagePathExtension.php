@@ -79,6 +79,7 @@ final class ImagePathExtension extends AbstractExtension
 
         $path = sprintf('%s%s%s', $img_host, $name, $img_file);
 
+        /** Кешируем изображение на 1 час для отдачи как ресурс  */
         if($cached && $cdn)
         {
             $cache = $this->cache->init('files-res');
