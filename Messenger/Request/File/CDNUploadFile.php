@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2024.  Baks.dev <admin@baks.dev>
+ *  Copyright 2025.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@ use Doctrine\ORM\Mapping\Table;
 use ReflectionAttribute;
 use ReflectionClass;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\HttpClient\HttpOptions;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\Exception\RecoverableMessageHandlingException;
 use Symfony\Component\Mime\Part\DataPart;
@@ -42,15 +43,26 @@ final readonly class CDNUploadFile
      * Конечная точка CDN для загрузки файла
      */
     public const string PATH_FILE_CDN = '/cdn/upload/file';
+    private HttpClientInterface $httpClient;
 
     public function __construct(
-        #[Autowire('%kernel.project_dir%')] private string $upload,
-        #[Autowire(env: 'CDN_HOST')] private string $CDN_HOST,
-        #[Autowire(env: 'CDN_USER')] private string $CDN_USER,
-        #[Autowire(env: 'CDN_PASS')] private string $CDN_PASS,
         private EntityManagerInterface $entityManager,
-        private HttpClientInterface $httpClient,
-    ) {}
+        #[Autowire('%kernel.project_dir%')] private string $upload,
+        #[Autowire(env: 'CDN_HOST')] string $CDN_HOST,
+        #[Autowire(env: 'CDN_USER')] string $CDN_USER,
+        #[Autowire(env: 'CDN_PASS')] string $CDN_PASS,
+        HttpClientInterface $httpClient,
+    )
+    {
+
+        $options = new HttpOptions()
+            ->setBaseUri(sprintf('https://%s', $CDN_HOST))
+            ->setAuthBasic($CDN_USER, $CDN_PASS)
+            ->toArray();
+
+        $this->httpClient = $httpClient->withOptions($options);
+
+    }
 
     public function __invoke(CDNUploadFileMessage $command): bool|string
     {
@@ -91,11 +103,10 @@ final readonly class CDNUploadFile
         /* Формируем заголовки файла и авторизации CDN */
         $formData = new FormDataPart($formFields);
         $headers = $formData->getPreparedHeaders()->toArray();
-        $headers[] = 'Authorization: Basic '.base64_encode($this->CDN_USER.':'.$this->CDN_PASS);
 
         $request = $this->httpClient->request(
             'POST',
-            'https://'.$this->CDN_HOST.self::PATH_FILE_CDN,
+            self::PATH_FILE_CDN,
             [
                 'headers' => $headers,
                 'body' => $formData->bodyToString(),
@@ -129,6 +140,7 @@ final readonly class CDNUploadFile
         {
             return null;
         }
+
         return (count(scandir($dir)) === 2);
     }
 }

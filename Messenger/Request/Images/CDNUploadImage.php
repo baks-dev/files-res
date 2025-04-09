@@ -31,6 +31,7 @@ use InvalidArgumentException;
 use ReflectionAttribute;
 use ReflectionClass;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\HttpClient\HttpOptions;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\Exception\RecoverableMessageHandlingException;
 use Symfony\Component\Mime\Part\DataPart;
@@ -45,14 +46,25 @@ final readonly class CDNUploadImage
      */
     public const string PATH_IMAGE_CDN = '/cdn/upload/image';
 
+    private HttpClientInterface $httpClient;
+
     public function __construct(
-        #[Autowire('%kernel.project_dir%')] private string $upload,
-        #[Autowire(env: 'CDN_HOST')] private string $CDN_HOST,
-        #[Autowire(env: 'CDN_USER')] private string $CDN_USER,
-        #[Autowire(env: 'CDN_PASS')] private string $CDN_PASS,
         private EntityManagerInterface $entityManager,
-        private HttpClientInterface $httpClient,
-    ) {}
+        #[Autowire('%kernel.project_dir%')] private string $upload,
+        #[Autowire(env: 'CDN_HOST')] $CDN_HOST,
+        #[Autowire(env: 'CDN_USER')] $CDN_USER,
+        #[Autowire(env: 'CDN_PASS')] $CDN_PASS,
+        HttpClientInterface $httpClient,
+    )
+    {
+
+        $options = new HttpOptions()
+            ->setBaseUri(sprintf('https://%s', $CDN_HOST))
+            ->setAuthBasic($CDN_USER, $CDN_PASS)
+            ->toArray();
+
+        $this->httpClient = $httpClient->withOptions($options);
+    }
 
 
     public function __invoke(CDNUploadImageMessage $command): bool|string
@@ -65,9 +77,12 @@ final readonly class CDNUploadImage
         }
 
         /* @var UploadEntityInterface $imgEntity */
-        $imgEntity = $this->entityManager->getRepository($command->getEntity())->find($command->getId());
+        $imgEntity = $this->entityManager
+            ->getRepository($command->getEntity())
+            ->find($command->getId());
 
-        /** Если не найдена сущность, возможно она еще не сохранилась,
+        /**
+         * Если не найдена сущность, возможно она еще не сохранилась,
          * и её необходимо отпарить позже через комманду repack
          */
         if($imgEntity === null)
@@ -89,9 +104,10 @@ final readonly class CDNUploadImage
         if(!file_exists($uploadFile))
         {
             /** Если файла не существует - проверяем что он имеется на CDN */
+            $this->httpClient->withOptions([]);
             $request = $this->httpClient->request(
                 'GET',
-                'https://'.$this->CDN_HOST.'/upload/'.$TABLE.'/'.$command->getDir().'/min.webp'
+                '/upload/'.$TABLE.'/'.$command->getDir().'/min.webp'
             );
 
             if($request->getStatusCode() === 200)
@@ -114,13 +130,13 @@ final readonly class CDNUploadImage
         /* Формируем заголовки файла и авторизации CDN */
         $formData = new FormDataPart($formFields);
         $headers = $formData->getPreparedHeaders()->toArray();
-        $headers[] = 'Authorization: Basic '.base64_encode($this->CDN_USER.':'.$this->CDN_PASS);
 
-
-        /* Отправляем запрос на загрузку файла серверу CDN */
+        /**
+         * Отправляем запрос на загрузку файла серверу CDN
+         */
         $request = $this->httpClient->request(
             'POST',
-            'https://'.$this->CDN_HOST.self::PATH_IMAGE_CDN,
+            self::PATH_IMAGE_CDN,
             [
                 'headers' => $headers,
                 'body' => $formData->bodyToString(),
@@ -155,6 +171,7 @@ final readonly class CDNUploadImage
         {
             return null;
         }
+
         return (count(scandir($dir)) === 2);
     }
 

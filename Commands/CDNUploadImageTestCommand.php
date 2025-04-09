@@ -33,6 +33,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\HttpClient\HttpOptions;
 use Symfony\Component\Messenger\Exception\RecoverableMessageHandlingException;
 use Symfony\Component\Mime\Part\DataPart;
 use Symfony\Component\Mime\Part\Multipart\FormDataPart;
@@ -44,25 +45,24 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 )]
 class CDNUploadImageTestCommand extends Command
 {
-    private string $CDN_HOST;
-    private string $CDN_USER;
-    private string $CDN_PASS;
+
     private HttpClientInterface $httpClient;
-    private string $project;
 
     public function __construct(
-        #[Autowire('%kernel.project_dir%')] string $project,
+        #[Autowire('%kernel.project_dir%')] private readonly string $project,
         #[Autowire(env: 'CDN_HOST')] string $CDN_HOST,
         #[Autowire(env: 'CDN_USER')] string $CDN_USER,
         #[Autowire(env: 'CDN_PASS')] string $CDN_PASS,
         HttpClientInterface $httpClient,
     )
     {
-        $this->project = $project;
-        $this->httpClient = $httpClient;
-        $this->CDN_HOST = $CDN_HOST;
-        $this->CDN_USER = $CDN_USER;
-        $this->CDN_PASS = $CDN_PASS;
+        $options = new HttpOptions()
+            ->setBaseUri(sprintf('https://%s', $CDN_HOST))
+            ->setAuthBasic($CDN_USER, $CDN_PASS)
+            ->toArray();
+
+        $this->httpClient = $httpClient->withOptions($options);
+
         parent::__construct();
     }
 
@@ -70,7 +70,6 @@ class CDNUploadImageTestCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-
 
         /* Абсолютный путь к файлу изображения */
         $image = $this->project.'/public/assets/img/logo.webp';
@@ -87,15 +86,17 @@ class CDNUploadImageTestCommand extends Command
             'image' => DataPart::fromPath($image),
         ];
 
-        /* Формируем заголовки файла и авторизации CDN */
+        /* Формируем заголовки файла */
         $formData = new FormDataPart($formFields);
         $headers = $formData->getPreparedHeaders()->toArray();
-        $headers[] = 'Authorization: Basic '.base64_encode($this->CDN_USER.':'.$this->CDN_PASS);
 
-        /* Отправляем запрос на загрузку файла серверу CDN */
+        /**
+         * Отправляем запрос на загрузку файла серверу CDN
+         */
+
         $request = $this->httpClient->request(
             'POST',
-            'https://'.$this->CDN_HOST.CDNUploadImage::PATH_IMAGE_CDN,
+            CDNUploadImage::PATH_IMAGE_CDN,
             [
                 'headers' => $headers,
                 'body' => $formData->bodyToString(),
@@ -105,8 +106,6 @@ class CDNUploadImageTestCommand extends Command
         {
             throw new RecoverableMessageHandlingException(sprintf('Error upload file CDN (%s)', $request->getContent()));
         }
-
-        //dump($request->getContent());
 
         return Command::SUCCESS;
     }
