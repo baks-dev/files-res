@@ -57,7 +57,6 @@ final readonly class CDNUploadImage
         HttpClientInterface $httpClient,
     )
     {
-
         $options = new HttpOptions()
             ->setBaseUri(sprintf('https://%s', $CDN_HOST))
             ->setAuthBasic($CDN_USER, $CDN_PASS)
@@ -69,6 +68,7 @@ final readonly class CDNUploadImage
 
     public function __invoke(CDNUploadImageMessage $command): bool|string
     {
+
         $this->entityManager->clear();
 
         if(!class_exists($command->getEntity()))
@@ -104,7 +104,6 @@ final readonly class CDNUploadImage
         if(!file_exists($uploadFile))
         {
             /** Если файла не существует - проверяем что он имеется на CDN */
-            $this->httpClient->withOptions([]);
             $request = $this->httpClient->request(
                 'GET',
                 '/upload/'.$TABLE.'/'.$command->getDir().'/min.webp'
