@@ -101,9 +101,11 @@ final readonly class CDNUploadImage
         $uploadDir = implode(DIRECTORY_SEPARATOR, [$this->upload, 'public', 'upload', $TABLE, $command->getDir()]);
         $uploadFile = $uploadDir.DIRECTORY_SEPARATOR.'image.'.$imgEntity->getExt();
 
+        /**
+         * Если файл отсутствует локально - проверяем нет ли его на CDN
+         */
         if(!file_exists($uploadFile))
         {
-            /** Если файла не существует - проверяем что он имеется на CDN */
             $request = $this->httpClient->request(
                 'GET',
                 '/upload/'.$TABLE.'/'.$command->getDir().'/min.webp'
