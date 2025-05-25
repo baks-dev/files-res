@@ -28,8 +28,10 @@ use BaksDev\Files\Resources\Upload\UploadEntityInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\Table;
 use InvalidArgumentException;
+use RecursiveDirectoryIterator;
 use ReflectionAttribute;
 use ReflectionClass;
+use SplFileInfo;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpClient\HttpOptions;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -90,8 +92,9 @@ final readonly class CDNUploadImage
             return false;
         }
 
-        /** Выделяем из сущности название таблицы для деректории загрузки файла */
+        /** Выделяем из сущности название таблицы для директории загрузки файла */
         $ref = new ReflectionClass($imgEntity);
+
         /** @var ReflectionAttribute $current */
         $current = current($ref->getAttributes(Table::class));
         $TABLE = $current->getArguments()['name'] ?? 'images';
@@ -108,7 +111,7 @@ final readonly class CDNUploadImage
         {
             $request = $this->httpClient->request(
                 'GET',
-                '/upload/'.$TABLE.'/'.$command->getDir().'/min.webp'
+                '/upload/'.$TABLE.'/'.$command->getDir().'/min.webp',
             );
 
             if($request->getStatusCode() === 200)
@@ -116,6 +119,25 @@ final readonly class CDNUploadImage
                 /* Обновляем сущность на CDN файла */
                 $imgEntity->updCdn('webp');
                 $this->entityManager->flush();
+
+                /**
+                 * Если на CDN найден файл - удаляем директорию с оригиналом файла
+                 *
+                 * @var SplFileInfo $info
+                 */
+
+                $directory = new RecursiveDirectoryIterator($uploadDir);
+
+                foreach($directory as $info)
+                {
+                    if($info->isFile())
+                    {
+                        unlink($info->getRealPath());
+                    }
+                }
+
+                rmdir($uploadDir);
+
                 return true;
             }
 
@@ -141,7 +163,7 @@ final readonly class CDNUploadImage
             [
                 'headers' => $headers,
                 'body' => $formData->bodyToString(),
-            ]
+            ],
         );
 
         if($request->getStatusCode() !== 200)
@@ -154,7 +176,8 @@ final readonly class CDNUploadImage
 
         $this->entityManager->flush();
 
-        /* Удаляем оригинал если файл загружен на CDN */
+        /** Удаляем оригинал и пустую директорию если файл загружен на CDN */
+
         unlink($uploadFile);
 
         if($this->is_dir_empty($uploadDir))
