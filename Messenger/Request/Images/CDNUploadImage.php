@@ -126,6 +126,11 @@ final readonly class CDNUploadImage
                  * @var SplFileInfo $info
                  */
 
+                if(!is_dir($uploadDir))
+                {
+                    return true;
+                }
+
                 $directory = new RecursiveDirectoryIterator($uploadDir);
 
                 foreach($directory as $info)
