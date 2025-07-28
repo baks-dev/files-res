@@ -146,7 +146,9 @@ final readonly class CDNUploadImage
                 return true;
             }
 
-            throw new RecoverableMessageHandlingException(sprintf('File Not found: %s', $uploadFile));
+            return false;
+
+            // throw new RecoverableMessageHandlingException(sprintf('File Not found: %s', $uploadFile));
         }
 
         /* Указываем путь и название файла для загрузки CDN */
