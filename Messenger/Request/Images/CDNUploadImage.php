@@ -107,7 +107,7 @@ final readonly class CDNUploadImage
         /**
          * Если файл отсутствует локально - проверяем нет ли его на CDN
          */
-        if(!file_exists($uploadFile))
+        if(false === file_exists($uploadFile))
         {
             $request = $this->httpClient->request(
                 'GET',
