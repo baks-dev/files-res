@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright 2025.  Baks.dev <admin@baks.dev>
+ *  Copyright 2026.  Baks.dev <admin@baks.dev>
  *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -52,6 +52,7 @@ class CDNUploadFileTestCommand extends Command
         #[Autowire(env: 'CDN_HOST')] string $CDN_HOST,
         #[Autowire(env: 'CDN_USER')] string $CDN_USER,
         #[Autowire(env: 'CDN_PASS')] string $CDN_PASS,
+        #[Autowire(env: 'APP_VERSION')] private readonly string $version,
         HttpClientInterface $httpClient,
     )
     {
@@ -72,7 +73,7 @@ class CDNUploadFileTestCommand extends Command
 
 
         /* Абсолютный путь к файлу изображения */
-        $image = $this->project.'/public/assets/img/logo.webp';
+        $image = $this->project.'/public/assets/'.$this->version.'/img/logo.webp';
 
         if(!file_exists($image))
         {
