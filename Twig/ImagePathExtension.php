@@ -37,6 +37,7 @@ final class ImagePathExtension extends AbstractExtension
     public function __construct(
         #[Autowire(env: 'CDN_HOST')] private readonly string $cdnHost,
         #[Autowire(env: 'APP_VERSION')] private readonly string $version,
+        #[Autowire('%kernel.project_dir%')] private string $upload,
         private readonly AppCacheInterface $cache
     ) {}
 
@@ -62,6 +63,17 @@ final class ImagePathExtension extends AbstractExtension
 
         if(false === $cdn)
         {
+            /** Делаем проверку наличия локального файла  */
+
+            $upload = null;
+            $upload[] = $this->upload;
+            $upload[] = 'public';
+            $upload[] = 'upload';
+            $upload[] = $name;
+            $upload[] = 'image.'.$ext;
+            $uploadDir = implode(DIRECTORY_SEPARATOR, $upload);
+
+
             $size = 'image';
         }
 
