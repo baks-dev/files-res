@@ -79,7 +79,7 @@ final class UploaderController // extends AbstractController
             [
                 'headers' => $headers,
                 'body' => $formData->bodyToString(),
-            ]
+            ],
         );
 
         if($response->getStatusCode() !== 200)

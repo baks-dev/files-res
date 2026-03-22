@@ -79,7 +79,7 @@ final readonly class FileUpload implements FileUploadInterface
                 /* Перемещаем файл */
                 $file->move(
                     $uploadDir,
-                    $newFilename
+                    $newFilename,
                 );
             }
 
@@ -92,7 +92,7 @@ final readonly class FileUpload implements FileUploadInterface
             /* Отправляем событие в шину  */
             $this->messageDispatch->dispatch(
                 message: new CDNUploadFileMessage($entity->getId(), get_class($entity), $name),
-                transport: 'files-res'
+                transport: 'files-res',
             );
 
         }

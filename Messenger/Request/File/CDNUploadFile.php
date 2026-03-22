@@ -110,7 +110,7 @@ final readonly class CDNUploadFile
             [
                 'headers' => $headers,
                 'body' => $formData->bodyToString(),
-            ]
+            ],
         );
 
         if($request->getStatusCode() !== 200)

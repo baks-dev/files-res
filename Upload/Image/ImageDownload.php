@@ -119,7 +119,7 @@ final readonly class ImageDownload
             /* Отправляем событие в шину  */
             $this->messageDispatch->dispatch(
                 message: new CDNUploadImageMessage($entity->getId(), get_class($entity), $newFilename, $dirId),
-                transport: 'files-res'
+                transport: 'files-res',
             );
         }
     }
