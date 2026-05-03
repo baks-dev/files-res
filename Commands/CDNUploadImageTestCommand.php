@@ -26,7 +26,7 @@ declare(strict_types=1);
 namespace BaksDev\Files\Resources\Commands;
 
 
-use BaksDev\Files\Resources\Messenger\Request\Images\CDNUploadImage;
+use BaksDev\Files\Resources\Messenger\Request\Images\CDNUploadImageDispatcher;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -97,7 +97,7 @@ class CDNUploadImageTestCommand extends Command
 
         $request = $this->httpClient->request(
             'POST',
-            CDNUploadImage::PATH_IMAGE_CDN,
+            CDNUploadImageDispatcher::PATH_IMAGE_CDN,
             [
                 'headers' => $headers,
                 'body' => $formData->bodyToString(),
