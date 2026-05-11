@@ -70,7 +70,6 @@ final readonly class CDNUploadImageDispatcher
 
     public function __invoke(CDNUploadImageMessage $command): bool|string
     {
-
         $this->entityManager->clear();
 
         if(!class_exists($command->getEntity()))
@@ -99,6 +98,14 @@ final readonly class CDNUploadImageDispatcher
         $current = current($ref->getAttributes(Table::class));
         $TABLE = $current->getArguments()['name'] ?? 'images';
 
+        /**
+         * Если передан код маркировки - присваиваем единый путь GTIN
+         * TODO: переделать $TABLE === 'product_sign_code'
+         */
+        if($TABLE === 'material_sign_code')
+        {
+            $TABLE = 'barcode';
+        }
 
         /* Абсолютный путь к директории и файлу изображения */
         $uploadDir = implode(DIRECTORY_SEPARATOR, [$this->upload, 'public', 'upload', $TABLE, $command->getDir()]);
