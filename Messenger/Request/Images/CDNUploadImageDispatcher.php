@@ -100,9 +100,8 @@ final readonly class CDNUploadImageDispatcher
 
         /**
          * Если передан код маркировки - присваиваем единый путь GTIN
-         * TODO: переделать $TABLE === 'product_sign_code'
          */
-        if($TABLE === 'material_sign_code')
+        if($TABLE === 'material_sign_code' || $TABLE === 'product_sign_code')
         {
             $TABLE = 'barcode';
         }
